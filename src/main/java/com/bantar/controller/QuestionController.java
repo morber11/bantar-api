@@ -24,11 +24,6 @@ public class QuestionController {
         this.rateLimiterService = rateLimiterService;
     }
 
-    @GetMapping("/hello")
-    public String hello(@RequestParam(value = "name", defaultValue = "World") String name) {
-        return String.format("Hello %s!", name);
-    }
-
     @GetMapping("/get/{id}")
     public ResponseEntity<Question> getQuestionById(@PathVariable int id) {
         if (rateLimiterService.isRateLimited()) {
