@@ -7,17 +7,17 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.bantar.config.Constants.DEFAULT_QUESTIONS_ICEBREAKERS_PATH;
+
 @Service
 public class QuestionServiceImpl implements QuestionService {
 
-    private static final String DEFAULT_QUESTIONS_ICEBREAKERS_PATH = "static/questions/questions_icebreakers.json";
-
-    private final JsonReaderService jsonReaderUtil;
+    private final QuestionMappingService questionMappingService;
     private List<Question> cachedQuestions;
 
     @Autowired
-    public QuestionServiceImpl(JsonReaderService jsonReaderUtil) {
-        this.jsonReaderUtil = jsonReaderUtil;
+    public QuestionServiceImpl(QuestionMappingService questionMappingService) {
+        this.questionMappingService = questionMappingService;
         loadQuestions(DEFAULT_QUESTIONS_ICEBREAKERS_PATH);
     }
 
@@ -44,8 +44,9 @@ public class QuestionServiceImpl implements QuestionService {
         loadQuestions(DEFAULT_QUESTIONS_ICEBREAKERS_PATH);
     }
 
+    @SuppressWarnings("SameParameterValue")
     private void loadQuestions(String path) {
-        cachedQuestions = jsonReaderUtil.readJsonResource(path);
+        cachedQuestions = questionMappingService.getQuestionsFromJsonResource(path);
     }
 
     private void ensureQuestionsLoaded() {

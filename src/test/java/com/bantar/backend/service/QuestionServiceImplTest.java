@@ -4,25 +4,37 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.bantar.model.Question;
-import com.bantar.service.JsonReaderService;
+import com.bantar.service.QuestionMappingService;
 import com.bantar.service.QuestionServiceImpl;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
-class QuestionServiceTest {
+
+class QuestionServiceImplTest {
 
     @Mock
-    private JsonReaderService jsonReaderService;
+    private QuestionMappingService questionMappingService;
 
     private QuestionServiceImpl questionService;
 
+    // add autoCloseable to remove warning
+    private AutoCloseable closeable;
+
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        questionService = new QuestionServiceImpl(jsonReaderService);
+        closeable = MockitoAnnotations.openMocks(this);
+        questionService = new QuestionServiceImpl(questionMappingService);
+    }
+
+    @AfterEach
+    void destroy() throws Exception {
+        closeable.close();
     }
 
     private List<Question> createQuestions() {
@@ -37,7 +49,8 @@ class QuestionServiceTest {
     void testGetQuestionById() {
         Question question = new Question("What is your favorite color?", 1);
         List<Question> questions = List.of(question);
-        when(jsonReaderService.readJsonResource(anyString())).thenReturn(questions);
+
+        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
 
         Question result = questionService.getQuestionById(1);
 
@@ -49,7 +62,7 @@ class QuestionServiceTest {
     @Test
     void testGetAllQuestions() {
         List<Question> questions = createQuestions();
-        when(jsonReaderService.readJsonResource(anyString())).thenReturn(questions);
+        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
 
         List<Question> result = questionService.getAllQuestions();
 
@@ -60,7 +73,8 @@ class QuestionServiceTest {
     @Test
     void testGetQuestionByIdNotFound() {
         List<Question> questions = List.of(new Question("What is your favorite color?", 1));
-        when(jsonReaderService.readJsonResource(anyString())).thenReturn(questions);
+        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
+
 
         Question result = questionService.getQuestionById(999);
 
@@ -69,21 +83,29 @@ class QuestionServiceTest {
 
     @Test
     void testRefreshQuestions() {
-        List<Question> mockQuestions = createQuestions();
-        when(jsonReaderService.readJsonResource(eq("static/questions/questions_icebreakers.json")))
-                .thenReturn(mockQuestions);
+        List<Question> questions = createQuestions();
+
+        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
 
         questionService.refreshQuestions();
 
         // it is invoked once on construction, so we need to check that it is invoked twice
-        verify(jsonReaderService, times(2)).readJsonResource(eq("static/questions/questions_icebreakers.json"));
-        assertEquals(mockQuestions, questionService.getAllQuestions());
+        verify(questionMappingService, times(2)).getQuestionsFromJsonResource(eq("static/questions/questions_icebreakers.json"));
+        List<Question> refreshedQuestions = questionService.getAllQuestions();
+
+        // check fields manually because they will be treated as new objects due to the refresh
+        assertEquals(questions.size(), refreshedQuestions.size());
+        for (int i = 0; i < questions.size(); i++) {
+            assertEquals(questions.get(i).getId(), refreshedQuestions.get(i).getId());
+            assertEquals(questions.get(i).getText(), refreshedQuestions.get(i).getText());
+        }
     }
+
 
     @Test
     void testGetQuestionsByRange() {
-        List<Question> mockQuestions = createQuestions();
-        when(jsonReaderService.readJsonResource(anyString())).thenReturn(mockQuestions);
+        List<Question> questions = createQuestions();
+        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
 
         List<Question> result = questionService.getQuestionsByRange(1, 2);
 
@@ -95,8 +117,8 @@ class QuestionServiceTest {
 
     @Test
     void testGetQuestionsByRangeWithStartGreaterThanEnd() {
-        List<Question> mockQuestions = createQuestions();
-        when(jsonReaderService.readJsonResource(anyString())).thenReturn(mockQuestions);
+        List<Question> questions = createQuestions();
+        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
 
         List<Question> result = questionService.getQuestionsByRange(2, 1000);
 
@@ -106,8 +128,8 @@ class QuestionServiceTest {
 
     @Test
     void testGetQuestionsByRangeWithLimitExceedingSize() {
-        List<Question> mockQuestions = createQuestions();
-        when(jsonReaderService.readJsonResource(anyString())).thenReturn(mockQuestions);
+        List<Question> questions = createQuestions();
+        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
 
         List<Question> result = questionService.getQuestionsByRange(0, 10);
 
@@ -117,8 +139,8 @@ class QuestionServiceTest {
 
     @Test
     void testGetQuestionsByRangeWithValidRange() {
-        List<Question> mockQuestions = createQuestions();
-        when(jsonReaderService.readJsonResource(anyString())).thenReturn(mockQuestions);
+        List<Question> questions = createQuestions();
+        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
 
         List<Question> result = questionService.getQuestionsByRange(1, 2);
 

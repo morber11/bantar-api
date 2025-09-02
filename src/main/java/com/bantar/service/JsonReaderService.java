@@ -1,29 +1,41 @@
 package com.bantar.service;
 
-import com.bantar.model.Question;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 
 @Service
 public class JsonReaderService {
 
-    public List<Question> readJsonResource(String resource) {
-        try (InputStream inputStream = JsonReaderService.class.getClassLoader().getResourceAsStream(resource)) {
+    private final ClassLoader classLoader;
+    private final ObjectMapper objectMapper;
 
+    public JsonReaderService(ClassLoader classLoader, ObjectMapper objectMapper) {
+        this.classLoader = classLoader;
+        this.objectMapper = objectMapper;
+    }
+
+    @SuppressWarnings("unused")
+    public JsonReaderService() {
+        this(JsonReaderService.class.getClassLoader(), new ObjectMapper());
+    }
+
+    public JsonNode readJsonResource(String resource) {
+        try (InputStream inputStream = classLoader.getResourceAsStream(resource)) {
             if (inputStream == null) {
                 return null;
             }
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(inputStream,
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, Question.class));
+            return readTreeFromStream(inputStream);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public JsonNode readTreeFromStream(InputStream inputStream) throws IOException {
+        return objectMapper.readTree(inputStream);
     }
 }
