@@ -2,6 +2,8 @@ package com.bantar.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -13,10 +15,12 @@ import static com.bantar.config.Constants.DEFAULT_QUESTIONS_ICEBREAKERS_PATH;
 @Service
 public class SyncServiceImpl implements SyncService {
 
+    private static final Logger logger = LogManager.getLogger(SyncServiceImpl.class);
     private final JsonReaderService jsonReaderUtil;
     private final AtomicLong latestChecksum = new AtomicLong(0L);
 
     public SyncServiceImpl(JsonReaderService jsonReaderUtil) {
+        logger.info("Initializing SyncServiceImpl");
         this.jsonReaderUtil = jsonReaderUtil;
     }
 
@@ -44,6 +48,7 @@ public class SyncServiceImpl implements SyncService {
             String jsonString = questions.toString();
             return calculateChecksum(jsonString);
         } catch (Exception e) {
+            logger.error("Failed to calculate checksum from file: {}", DEFAULT_QUESTIONS_ICEBREAKERS_PATH, e);
             return -1L;
         }
     }
