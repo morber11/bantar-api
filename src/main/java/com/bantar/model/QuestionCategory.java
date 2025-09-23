@@ -30,4 +30,13 @@ public enum QuestionCategory {
     public String getDisplayName() {
         return displayName;
     }
+
+    public static QuestionCategory fromString(String category) {
+        for (QuestionCategory c : QuestionCategory.values()) {
+            if (c.name().equalsIgnoreCase(category)) {
+                return c;
+            }
+        }
+        throw new IllegalArgumentException("Unknown category: " + category);
+    }
 }
