@@ -3,8 +3,11 @@ package com.bantar.backend.service;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.bantar.entity.QuestionCategoryEntity;
+import com.bantar.entity.QuestionEntity;
 import com.bantar.model.Question;
-import com.bantar.service.QuestionMappingService;
+import com.bantar.repository.QuestionCategoryRepository;
+import com.bantar.repository.QuestionRepository;
 import com.bantar.service.QuestionServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,15 +16,17 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-
 
 class QuestionServiceImplTest {
 
     @Mock
-    private QuestionMappingService questionMappingService;
-
     private QuestionServiceImpl questionService;
+    @Mock
+    private QuestionRepository questionRepository;
+    @Mock
+    QuestionCategoryRepository questionCategoryRepository;
 
     // add autoCloseable to remove warning
     private AutoCloseable closeable;
@@ -29,7 +34,7 @@ class QuestionServiceImplTest {
     @BeforeEach
     void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
-        questionService = new QuestionServiceImpl(questionMappingService);
+        questionService = new QuestionServiceImpl(questionRepository, questionCategoryRepository);
     }
 
     @AfterEach
@@ -37,20 +42,41 @@ class QuestionServiceImplTest {
         closeable.close();
     }
 
-    private List<Question> createQuestions() {
+    private List<QuestionEntity> createQuestions() {
+        QuestionCategoryEntity category = new QuestionCategoryEntity();
+        category.setCategory("ICEBREAKER");
+        List<QuestionCategoryEntity> categories = Collections.singletonList(category);
+
         return Arrays.asList(
-                new Question("What is your favorite color?", 1),
-                new Question("What is your dream job?", 2),
-                new Question("What is your favorite book?", 3)
+                new QuestionEntity(1, "What is your favorite color?", categories),
+                new QuestionEntity(2, "What is your dream job?", categories),
+                new QuestionEntity(3, "What is your favorite book?", categories)
+        );
+    }
+
+    private List<QuestionCategoryEntity> createQuestionCategories() {
+        QuestionEntity question1 = new QuestionEntity();
+        question1.setId(1L);
+
+        QuestionEntity question2 = new QuestionEntity();
+        question2.setId(2L);
+
+        QuestionEntity question3 = new QuestionEntity();
+        question3.setId(3L);
+
+        return Arrays.asList(
+                new QuestionCategoryEntity(1L, "ICEBREAKER", question1),
+                new QuestionCategoryEntity(2L, "CASUAL", question2),
+                new QuestionCategoryEntity(3L, "SPORTS", question3)
         );
     }
 
     @Test
     void testGetQuestionById() {
-        Question question = new Question("What is your favorite color?", 1);
-        List<Question> questions = List.of(question);
+        QuestionEntity question = new QuestionEntity(1, "What is your favorite color?");
+        List<QuestionEntity> questions = List.of(question);
 
-        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
         Question result = questionService.getQuestionById(1);
 
@@ -61,8 +87,8 @@ class QuestionServiceImplTest {
 
     @Test
     void testGetAllQuestions() {
-        List<Question> questions = createQuestions();
-        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
+        List<QuestionEntity> questions = createQuestions();
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
         List<Question> result = questionService.getAllQuestions();
 
@@ -72,8 +98,12 @@ class QuestionServiceImplTest {
 
     @Test
     void testGetQuestionByIdNotFound() {
-        List<Question> questions = List.of(new Question("What is your favorite color?", 1));
-        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
+        QuestionCategoryEntity category = new QuestionCategoryEntity();
+        category.setCategory("ICEBREAKER");
+        List<QuestionCategoryEntity> categories = Collections.singletonList(category);
+
+        List<QuestionEntity> questions = List.of(new QuestionEntity(1, "What is your favorite color?", categories));
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
 
         Question result = questionService.getQuestionById(999);
@@ -83,14 +113,11 @@ class QuestionServiceImplTest {
 
     @Test
     void testRefreshQuestions() {
-        List<Question> questions = createQuestions();
-
-        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
+        List<QuestionEntity> questions = createQuestions();
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
         questionService.refreshQuestions();
 
-        // it is invoked once on construction, so we need to check that it is invoked twice
-        verify(questionMappingService, times(2)).getQuestionsFromJsonResource(eq("static/questions/questions_icebreakers.json"));
         List<Question> refreshedQuestions = questionService.getAllQuestions();
 
         // check fields manually because they will be treated as new objects due to the refresh
@@ -104,8 +131,8 @@ class QuestionServiceImplTest {
 
     @Test
     void testGetQuestionsByRange() {
-        List<Question> questions = createQuestions();
-        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
+        List<QuestionEntity> questions = createQuestions();
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
         List<Question> result = questionService.getQuestionsByRange(1, 2);
 
@@ -117,8 +144,8 @@ class QuestionServiceImplTest {
 
     @Test
     void testGetQuestionsByRangeWithStartGreaterThanEnd() {
-        List<Question> questions = createQuestions();
-        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
+        List<QuestionEntity> questions = createQuestions();
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
         List<Question> result = questionService.getQuestionsByRange(2, 1000);
 
@@ -128,8 +155,8 @@ class QuestionServiceImplTest {
 
     @Test
     void testGetQuestionsByRangeWithLimitExceedingSize() {
-        List<Question> questions = createQuestions();
-        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
+        List<QuestionEntity> questions = createQuestions();
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
         List<Question> result = questionService.getQuestionsByRange(0, 10);
 
@@ -139,8 +166,8 @@ class QuestionServiceImplTest {
 
     @Test
     void testGetQuestionsByRangeWithValidRange() {
-        List<Question> questions = createQuestions();
-        when(questionMappingService.getQuestionsFromJsonResource(anyString())).thenReturn(questions);
+        List<QuestionEntity> questions = createQuestions();
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
         List<Question> result = questionService.getQuestionsByRange(1, 2);
 
