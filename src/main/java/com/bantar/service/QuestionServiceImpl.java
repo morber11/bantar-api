@@ -11,20 +11,17 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.bantar.config.Constants.DEFAULT_QUESTIONS_ICEBREAKERS_PATH;
 import static com.bantar.mapper.QuestionMapper.toModel;
 
 @Service
 public class QuestionServiceImpl implements QuestionService {
 
     private static final Logger logger = LogManager.getLogger(QuestionServiceImpl.class);
-    private QuestionRepository questionRepository;
-    private QuestionCategoryRepository questionCategoryRepository;
+    private final QuestionRepository questionRepository;
+    private final QuestionCategoryRepository questionCategoryRepository;
     private List<Question> cachedQuestions;
 
     @Autowired
@@ -32,7 +29,7 @@ public class QuestionServiceImpl implements QuestionService {
         logger.info("Initializing QuestionServiceImpl");
         this.questionRepository = questionRepository;
         this.questionCategoryRepository = questionCategoryRepository;
-        loadQuestions(DEFAULT_QUESTIONS_ICEBREAKERS_PATH);
+        loadQuestions();
     }
 
     @Override
@@ -54,12 +51,52 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    public List<Question> getQuestionsByCategory(String category) {
+        ensureQuestionsLoaded();
+
+        QuestionCategory questionCategory;
+        try {
+            questionCategory = QuestionCategory.valueOf(category.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+        return findQuestionsByCategory(questionCategory);
+    }
+
+    @Override
+    public List<Question> getQuestionsByCategories(List<String> categories) {
+        ensureQuestionsLoaded();
+
+        if (categories == null || categories.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<QuestionCategory> validCategories = categories.stream()
+                .map(String::toUpperCase)
+                .map(category -> {
+                    try {
+                        return QuestionCategory.valueOf(category);
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (validCategories.isEmpty()) {
+            return null;
+        }
+
+        return findQuestionsByCategories(validCategories);
+    }
+
+    @Override
     public void refreshQuestions() {
-        loadQuestions(DEFAULT_QUESTIONS_ICEBREAKERS_PATH);
+        loadQuestions();
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void loadQuestions(String path) {
+    private void loadQuestions() {
         List<QuestionEntity> icebreakerQuestions = questionRepository.getAllIcebreakers();
 
         List<Long> questionIds = icebreakerQuestions.stream()
@@ -84,7 +121,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     private void ensureQuestionsLoaded() {
         if (cachedQuestions == null || cachedQuestions.isEmpty()) {
-            loadQuestions(DEFAULT_QUESTIONS_ICEBREAKERS_PATH);
+            loadQuestions();
         }
     }
 
@@ -101,4 +138,18 @@ public class QuestionServiceImpl implements QuestionService {
                 .limit(limit)
                 .collect(Collectors.toList());
     }
+
+    private List<Question> findQuestionsByCategory(QuestionCategory category) {
+        return cachedQuestions.stream()
+                .filter(q -> q.getCategories().contains(category))
+                .collect(Collectors.toList());
+    }
+
+    private List<Question> findQuestionsByCategories(List<QuestionCategory> requiredCategories) {
+        return cachedQuestions.stream()
+                .filter(q -> new HashSet<>(q.getCategories()).containsAll(requiredCategories))
+                .collect(Collectors.toList());
+    }
+
+
 }
