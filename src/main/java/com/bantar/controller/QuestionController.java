@@ -57,6 +57,32 @@ public class QuestionController {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
+    @GetMapping("/getByCategory")
+    public ResponseEntity<List<Question>> getQuestionsByCategory(@RequestParam String category) {
+        List<Question> result = questionService.getQuestionsByCategory(category);
+
+        if (result == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .build();
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/getByCategories")
+    public ResponseEntity<List<Question>> getQuestionsByCategories(@RequestParam List<String> categories) {
+        List<Question> result = questionService.getQuestionsByCategories(categories);
+
+        if (result == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .build();
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<Void> refreshQuestions() {
         questionService.refreshQuestions();
