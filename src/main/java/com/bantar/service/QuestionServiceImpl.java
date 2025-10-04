@@ -6,6 +6,7 @@ import com.bantar.model.Question;
 import com.bantar.model.QuestionCategory;
 import com.bantar.repository.QuestionCategoryRepository;
 import com.bantar.repository.QuestionRepository;
+import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,14 +23,23 @@ public class QuestionServiceImpl implements QuestionService {
     private static final Logger logger = LogManager.getLogger(QuestionServiceImpl.class);
     private final QuestionRepository questionRepository;
     private final QuestionCategoryRepository questionCategoryRepository;
-    private List<Question> cachedQuestions;
+    private volatile List<Question> cachedQuestions;
 
     @Autowired
     public QuestionServiceImpl(QuestionRepository questionRepository, QuestionCategoryRepository questionCategoryRepository) {
         logger.info("Initializing QuestionServiceImpl");
         this.questionRepository = questionRepository;
         this.questionCategoryRepository = questionCategoryRepository;
-        loadQuestions();
+    }
+
+    @SuppressWarnings("unused")
+    @PostConstruct
+    public void initialize() {
+        try {
+            loadQuestions();
+        } catch (Exception e) {
+            logger.error("An error occurred during the initial question load", e);
+        }
     }
 
     @Override
@@ -96,7 +106,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void loadQuestions() {
+    private synchronized void loadQuestions() {
         List<QuestionEntity> icebreakerQuestions = questionRepository.getAllIcebreakers();
 
         List<Long> questionIds = icebreakerQuestions.stream()
@@ -121,7 +131,11 @@ public class QuestionServiceImpl implements QuestionService {
 
     private void ensureQuestionsLoaded() {
         if (cachedQuestions == null || cachedQuestions.isEmpty()) {
-            loadQuestions();
+            synchronized (this) {
+                if (cachedQuestions == null || cachedQuestions.isEmpty()) {
+                    loadQuestions();
+                }
+            }
         }
     }
 
