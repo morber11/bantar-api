@@ -77,27 +77,26 @@ public class QuestionServiceImpl implements QuestionService {
     public List<Question> getQuestionsByCategories(List<String> categories) {
         ensureQuestionsLoaded();
 
-        if (categories == null || categories.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<QuestionCategory> validCategories = categories.stream()
-                .map(String::toUpperCase)
-                .map(category -> {
-                    try {
-                        return QuestionCategory.valueOf(category);
-                    } catch (IllegalArgumentException e) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
+        List<QuestionCategory> validCategories = getValidCategories(categories);
 
         if (validCategories.isEmpty()) {
             return null;
         }
 
         return findQuestionsByCategories(validCategories);
+    }
+
+    @Override
+    public List<Question> getQuestionsByFilteredCategories(List<String> categories) {
+        ensureQuestionsLoaded();
+
+        List<QuestionCategory> validCategories = getValidCategories(categories);
+
+        if (validCategories.isEmpty()) {
+            return null;
+        }
+
+        return findQuestionsByFilteredCategories(validCategories);
     }
 
     @Override
@@ -139,6 +138,24 @@ public class QuestionServiceImpl implements QuestionService {
         }
     }
 
+    private List<QuestionCategory> getValidCategories(List<String> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return categories.stream()
+                .map(String::toUpperCase)
+                .map(category -> {
+                    try {
+                        return QuestionCategory.valueOf(category);
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
     private Question findQuestionById(int id) {
         return cachedQuestions.stream()
                 .filter(q -> q.getId() == id)
@@ -160,6 +177,13 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     private List<Question> findQuestionsByCategories(List<QuestionCategory> requiredCategories) {
+        Set<QuestionCategory> requiredCategorySet = new HashSet<>(requiredCategories);
+        return cachedQuestions.stream()
+                .filter(q -> !Collections.disjoint(new HashSet<>(q.getCategories()), requiredCategorySet))
+                .collect(Collectors.toList());
+    }
+
+    private List<Question> findQuestionsByFilteredCategories(List<QuestionCategory> requiredCategories) {
         return cachedQuestions.stream()
                 .filter(q -> new HashSet<>(q.getCategories()).containsAll(requiredCategories))
                 .collect(Collectors.toList());

@@ -1,4 +1,4 @@
-package com.bantar.backend.service;
+package com.bantar.service;
 
 import com.bantar.entity.QuestionCategoryEntity;
 import com.bantar.entity.QuestionEntity;
@@ -6,7 +6,6 @@ import com.bantar.model.Question;
 import com.bantar.model.QuestionCategory;
 import com.bantar.repository.QuestionCategoryRepository;
 import com.bantar.repository.QuestionRepository;
-import com.bantar.service.QuestionServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,6 @@ import org.mockito.MockitoAnnotations;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -30,7 +28,6 @@ class QuestionServiceImplTest {
     @Mock
     QuestionCategoryRepository questionCategoryRepository;
 
-    // add autoCloseable to remove warning
     private AutoCloseable closeable;
 
     @BeforeEach
@@ -66,14 +63,13 @@ class QuestionServiceImplTest {
         QuestionEntity question3 = new QuestionEntity();
         question3.setId(3L);
 
-        List<QuestionCategoryEntity> list = Arrays.asList(
+        return Arrays.asList(
                 new QuestionCategoryEntity(1L, "ICEBREAKER", question1),
                 new QuestionCategoryEntity(2L, "ICEBREAKER", question2),
                 new QuestionCategoryEntity(3L, "ICEBREAKER", question3),
                 new QuestionCategoryEntity(2L, "CASUAL", question2),
                 new QuestionCategoryEntity(3L, "SPORTS", question3)
         );
-        return list;
     }
 
     @Test
@@ -125,7 +121,6 @@ class QuestionServiceImplTest {
 
         List<Question> refreshedQuestions = questionService.getAllQuestions();
 
-        // check fields manually because they will be treated as new objects due to the refresh
         assertEquals(questions.size(), refreshedQuestions.size());
         for (int i = 0; i < questions.size(); i++) {
             assertEquals(questions.get(i).getId(), refreshedQuestions.get(i).getId());
@@ -188,7 +183,6 @@ class QuestionServiceImplTest {
         List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
 
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
-        // we need to be explicit with the questionIds here
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
         List<Question> result = questionService.getQuestionsByCategory("ICEBREAKER");
 
@@ -215,10 +209,9 @@ class QuestionServiceImplTest {
         List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
 
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
-        // we need to be explicit with the questionIds here
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByCategories(categories);
+        List<Question> result = questionService.getQuestionsByFilteredCategories(categories);
 
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -232,17 +225,16 @@ class QuestionServiceImplTest {
     }
 
     @Test
-    void testGetQuestionsByCategoriesWithSomeInvalid() {
+    void testGetQuestionsByFilteredCategoriesWithSomeInvalid() {
         List<String> categories = List.of("CASUAL", "invalid");
 
         List<QuestionEntity> questions = createQuestionEntities();
         List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
 
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
-        // we need to be explicit with the questionIds here
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByCategories(categories);
+        List<Question> result = questionService.getQuestionsByFilteredCategories(categories);
 
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -253,6 +245,80 @@ class QuestionServiceImplTest {
     }
 
     @Test
+    void testGetQuestionsByFilteredCategoriesAllInvalid() {
+        List<String> categories = List.of("wrong", "invalid");
+
+        List<QuestionEntity> questions = createQuestionEntities();
+        List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
+
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
+        when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
+
+        List<Question> result = questionService.getQuestionsByFilteredCategories(categories);
+
+        assertNull(result);
+    }
+
+    @Test
+    void testGetQuestionsByFilteredCategoriesEmptyList() {
+        List<QuestionEntity> questions = createQuestionEntities();
+        List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
+
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
+        when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
+
+        List<Question> result = questionService.getQuestionsByFilteredCategories(Collections.emptyList());
+
+        assertNull(result);
+    }
+
+    @Test
+    void testGetQuestionsByFilteredCategoriesNullList() {
+        List<QuestionEntity> questions = createQuestionEntities();
+        List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
+
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
+        when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
+
+        List<Question> result = questionService.getQuestionsByFilteredCategories(null);
+
+        assertNull(result);
+    }
+
+    @Test
+    void testGetQuestionsByCategoriesAnyMatch() {
+        List<String> categories = List.of("CASUAL", "SPORTS");
+
+        List<QuestionEntity> questions = createQuestionEntities();
+        List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
+
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
+        when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
+
+        List<Question> result = questionService.getQuestionsByCategories(categories);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetQuestionsByCategoriesWithSomeInvalid() {
+        List<String> categories = List.of("SPORTS", "invalid");
+
+        List<QuestionEntity> questions = createQuestionEntities();
+        List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
+
+        when(questionRepository.getAllIcebreakers()).thenReturn(questions);
+        when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
+
+        List<Question> result = questionService.getQuestionsByCategories(categories);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertTrue(result.get(0).getCategories().contains(QuestionCategory.SPORTS));
+    }
+
+    @Test
     void testGetQuestionsByCategoriesAllInvalid() {
         List<String> categories = List.of("wrong", "invalid");
 
@@ -260,7 +326,6 @@ class QuestionServiceImplTest {
         List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
 
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
-        // we need to be explicit with the questionIds here
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
         List<Question> result = questionService.getQuestionsByCategories(categories);
@@ -270,32 +335,28 @@ class QuestionServiceImplTest {
 
     @Test
     void testGetQuestionsByCategoriesEmptyList() {
-        List<Question> result = questionService.getQuestionsByCategories(Collections.emptyList());
-
         List<QuestionEntity> questions = createQuestionEntities();
         List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
 
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
-        // we need to be explicit with the questionIds here
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        List<Question> result = questionService.getQuestionsByCategories(Collections.emptyList());
+
+        assertNull(result);
     }
 
     @Test
     void testGetQuestionsByCategoriesNullList() {
-        List<Question> result = questionService.getQuestionsByCategories(null);
-
         List<QuestionEntity> questions = createQuestionEntities();
         List<QuestionCategoryEntity> questionCategories = createQuestionCategoriesEntities();
 
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
-        // we need to be explicit with the questionIds here
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        List<Question> result = questionService.getQuestionsByCategories(null);
+
+        assertNull(result);
     }
 
 }

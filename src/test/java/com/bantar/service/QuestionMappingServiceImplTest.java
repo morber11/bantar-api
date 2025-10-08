@@ -1,8 +1,6 @@
-package com.bantar.backend.service;
+package com.bantar.service;
 
 import com.bantar.model.Question;
-import com.bantar.service.JsonReaderService;
-import com.bantar.service.QuestionMappingServiceImpl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;

@@ -10,5 +10,6 @@ public interface QuestionService {
     List<Question> getAllQuestions();
     List<Question> getQuestionsByCategory(String category);
     List<Question> getQuestionsByCategories(List<String> categories);
+    List<Question> getQuestionsByFilteredCategories(List<String> categories);
     void refreshQuestions();
 }
