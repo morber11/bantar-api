@@ -177,8 +177,9 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     private List<Question> findQuestionsByCategories(List<QuestionCategory> requiredCategories) {
+        Set<QuestionCategory> requiredCategorySet = new HashSet<>(requiredCategories);
         return cachedQuestions.stream()
-                .filter(q -> !Collections.disjoint(new HashSet<>(q.getCategories()), requiredCategories))
+                .filter(q -> !Collections.disjoint(new HashSet<>(q.getCategories()), requiredCategorySet))
                 .collect(Collectors.toList());
     }
 
