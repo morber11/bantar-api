@@ -1,10 +1,8 @@
-package com.bantar.backend.service;
+package com.bantar.service;
 
-import com.bantar.service.SyncServiceImpl;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import com.bantar.service.JsonReaderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;

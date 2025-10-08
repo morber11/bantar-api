@@ -1,7 +1,6 @@
-package com.bantar.backend.service;
+package com.bantar.service;
 
 import com.bantar.model.Question;
-import com.bantar.service.SlopService;
 import com.google.genai.Client;
 import com.google.genai.Models;
 import com.google.genai.types.GenerateContentResponse;

@@ -1,4 +1,4 @@
-package com.bantar.backend;
+package com.bantar;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
