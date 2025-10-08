@@ -4,6 +4,7 @@ WORKDIR /build
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
 COPY src src
+RUN chmod +x ./mvnw && sed -i 's/\r$//' ./mvnw
 RUN ./mvnw -DskipTests package
 
 # runtime stage
