@@ -61,7 +61,7 @@ class SyncServiceImplTest {
     }
 
     @Test
-    void testGetLatestChecksumhInvalidJsonData() {
+    void testGetLatestChecksumInvalidJsonData() {
         when(jsonReaderService.readJsonResource(anyString())).thenReturn(null);
         long result = syncService.getLatestChecksum();
         assertEquals(-1L, result);
