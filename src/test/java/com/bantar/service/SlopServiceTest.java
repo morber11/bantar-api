@@ -1,6 +1,8 @@
 package com.bantar.service;
 
+import com.bantar.entity.AiQuestionEntity;
 import com.bantar.model.Question;
+import com.bantar.repository.AiQuestionRepository;
 import com.google.genai.Client;
 import com.google.genai.Models;
 import com.google.genai.types.GenerateContentResponse;
@@ -14,6 +16,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
+
 public class SlopServiceTest {
 
     private SlopService slopService;
@@ -23,12 +26,15 @@ public class SlopServiceTest {
     @Mock
     private Models mockModels;
 
+    @Mock
+    private AiQuestionRepository mockAiQuestionRepository;
+
     @BeforeEach
     void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
         Client mockAiClient = new Client();
         ReflectionTestUtils.setField(mockAiClient, "models", mockModels); // janky reflection because it is a final field
-        slopService = new SlopService(mockAiClient);
+        slopService = new SlopService(mockAiClient, mockAiQuestionRepository);
     }
 
     @AfterEach
@@ -43,12 +49,30 @@ public class SlopServiceTest {
         when(response.text()).thenReturn(mockResponse);
         when(mockModels.generateContent(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
                 .thenReturn(response);
-
         slopService.generateQuestions(5);
 
         Question result = slopService.getRandomQuestion();
         assertNotNull(result);
         assertEquals("Question 1", result.getText());
+
+        Mockito.verify(mockAiQuestionRepository, Mockito.atLeastOnce()).save(Mockito.argThat(entity ->
+                entity != null && entity.getText().equals("Question 1") && entity.getHash() != null
+        ));
+    }
+
+    @Test
+    void testPreloadFromDatabase() {
+        AiQuestionEntity persisted = new AiQuestionEntity("Persisted Question", "test123hash");
+        persisted.setId(123L);
+        when(mockAiQuestionRepository.findAll()).thenReturn(java.util.List.of(persisted));
+
+        // manually initialize because spring never calls it
+        slopService.initialize();
+
+        Question q = slopService.getRandomQuestion();
+
+        assertNotNull(q);
+        assertEquals("Persisted Question", q.getText());
     }
 
     @Test

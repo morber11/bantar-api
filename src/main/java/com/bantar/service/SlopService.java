@@ -1,7 +1,9 @@
 package com.bantar.service;
 
+import com.bantar.entity.AiQuestionEntity;
 import com.bantar.model.Question;
 import com.bantar.model.QuestionCategory;
+import com.bantar.repository.AiQuestionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
@@ -9,9 +11,15 @@ import com.google.genai.types.GenerateContentResponse;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -24,16 +32,27 @@ public class SlopService {
     private static final Logger logger = LogManager.getLogger(SlopService.class);
     Map<String, Question> questionMap = new ConcurrentHashMap<>();
     private final Client aiClient;
+    private final AiQuestionRepository aiQuestionRepository;
     private static final int INITIAL_QUESTION_COUNT = 30;
 
-    public SlopService(Client aiClient) {
+    @Autowired
+    public SlopService(Client aiClient, AiQuestionRepository aiQuestionRepository) {
         this.aiClient = aiClient;
+        this.aiQuestionRepository = aiQuestionRepository;
     }
 
     @SuppressWarnings("unused")
     @PostConstruct
     public void initialize() {
         try {
+            aiQuestionRepository.findAll().forEach(entity -> {
+                Question q = new Question(entity.getText(), entity.getId());
+                q.setCategories(List.of(QuestionCategory.ICEBREAKER));
+                questionMap.putIfAbsent(q.getText(), q);
+            });
+            logger.info("{} ai questions preloaded from database", questionMap.size());
+
+
             generateQuestions(INITIAL_QUESTION_COUNT);
         } catch (Exception e) {
             logger.error("An error occurred during the initial question generation", e);
@@ -79,6 +98,17 @@ public class SlopService {
             if (questionMap.putIfAbsent(q.getText(), q) == null) {
                 q.setCategories(List.of(QuestionCategory.ICEBREAKER));
                 added++;
+
+                try {
+                    String hash = sha256(q.getText());
+                    if (!aiQuestionRepository.existsByHash(hash)) {
+                        AiQuestionEntity entity = new AiQuestionEntity(q.getText(), hash);
+                        aiQuestionRepository.save(entity);
+                    }
+                } catch (Exception ex) {
+                    logger.warn("Failed to persist AI question: {}", q.getText(), ex);
+                }
+
             }
         }
         logger.info("{} ai generated questions added", added);
@@ -93,5 +123,15 @@ public class SlopService {
         }
 
         return cleaned.substring(startIndex);
+    }
+
+    private String sha256(String text) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder();
+        for (byte b : hashBytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 }
