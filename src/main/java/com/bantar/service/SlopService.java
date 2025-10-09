@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.PersistenceException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +50,13 @@ public class SlopService {
             aiQuestionRepository.findAll().forEach(entity -> {
                 Question q = new Question(entity.getText(), entity.getId());
                 q.setCategories(List.of(QuestionCategory.ICEBREAKER));
-                questionMap.putIfAbsent(q.getText(), q);
+                try {
+                    String key = sha256(entity.getText().trim().toLowerCase());
+                    questionMap.putIfAbsent(key, q);
+                } catch (Exception e) {
+                    // fallback to text key if hashing fails
+                    questionMap.putIfAbsent(q.getText(), q);
+                }
             });
             logger.info("{} ai questions preloaded from database", questionMap.size());
 
@@ -95,20 +103,34 @@ public class SlopService {
 
         int added = 0;
         for (Question q : questions) {
-            if (questionMap.putIfAbsent(q.getText(), q) == null) {
+            String normalized = q.getText() == null ? "" : q.getText().trim();
+            if (normalized.isBlank()) continue;
+
+            String key;
+            try {
+                key = sha256(normalized.toLowerCase());
+            } catch (NoSuchAlgorithmException e) {
+                // fallback to text key
+                key = normalized;
+            }
+
+            if (questionMap.putIfAbsent(key, q) == null) {
                 q.setCategories(List.of(QuestionCategory.ICEBREAKER));
                 added++;
 
                 try {
-                    String hash = sha256(q.getText());
-                    if (!aiQuestionRepository.existsByHash(hash)) {
-                        AiQuestionEntity entity = new AiQuestionEntity(q.getText(), hash);
-                        aiQuestionRepository.save(entity);
+                    if (!aiQuestionRepository.existsByHash(key)) {
+                        AiQuestionEntity entity = new AiQuestionEntity(q.getText(), key);
+                        try {
+                            aiQuestionRepository.save(entity);
+                        } catch (DataIntegrityViolationException | PersistenceException dbEx) {
+                            // concurrent insert happened
+                            logger.warn("AI question save race detected for hash {} - ignoring duplicate save.", key);
+                        }
                     }
                 } catch (Exception ex) {
                     logger.warn("Failed to persist AI question: {}", q.getText(), ex);
                 }
-
             }
         }
         logger.info("{} ai generated questions added", added);
