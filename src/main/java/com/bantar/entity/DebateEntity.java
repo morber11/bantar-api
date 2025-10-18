@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "QUESTION")
-public class QuestionEntity {
+@Table(name = "DEBATE")
+public class DebateEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -14,18 +14,18 @@ public class QuestionEntity {
     @Column(length = 500)
     private String text;
 
-    @OneToMany(mappedBy = "question", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<QuestionCategoryEntity> categories;
+    @OneToMany(mappedBy = "debate", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<DebateCategoryEntity> categories;
 
-    public QuestionEntity() {
+    public DebateEntity() {
     }
 
-    public QuestionEntity(long id, String text) {
+    public DebateEntity(long id, String text) {
         this.id = id;
         this.text = text;
     }
 
-    public QuestionEntity(long id, String text, List<QuestionCategoryEntity> categories) {
+    public DebateEntity(long id, String text, List<DebateCategoryEntity> categories) {
         this.id = id;
         this.text = text;
         this.categories = categories;
@@ -47,11 +47,11 @@ public class QuestionEntity {
         this.text = text;
     }
 
-    public List<QuestionCategoryEntity> getCategories() {
+    public List<DebateCategoryEntity> getCategories() {
         return categories;
     }
 
-    public void setCategories(List<QuestionCategoryEntity> categories) {
+    public void setCategories(List<DebateCategoryEntity> categories) {
         this.categories = categories;
     }
 }
