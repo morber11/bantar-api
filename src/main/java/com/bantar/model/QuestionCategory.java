@@ -32,11 +32,6 @@ public enum QuestionCategory {
     }
 
     public static QuestionCategory fromString(String category) {
-        for (QuestionCategory c : QuestionCategory.values()) {
-            if (c.name().equalsIgnoreCase(category)) {
-                return c;
-            }
-        }
-        throw new IllegalArgumentException("Unknown category: " + category);
+        return com.bantar.util.EnumUtils.fromStringIgnoreCase(QuestionCategory.class, category);
     }
 }
