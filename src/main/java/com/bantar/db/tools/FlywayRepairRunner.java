@@ -1,4 +1,4 @@
-package com.bantar.db.migration.tools;
+package com.bantar.db.tools;
 
 import org.flywaydb.core.Flyway;
 
