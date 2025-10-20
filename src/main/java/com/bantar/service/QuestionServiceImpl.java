@@ -87,7 +87,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public List<ResponseDTO<?>> getByCategories(List<String> categories) {
-        List<QuestionCategory> validCategories = getValidCategories(categories);
+        List<QuestionCategory> validCategories = QuestionCategory.fromStrings(categories);
         if (validCategories.isEmpty()) {
             return Collections.emptyList();
         }
@@ -101,7 +101,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public List<ResponseDTO<?>> getByFilteredCategories(List<String> categories) {
-        List<QuestionCategory> validCategories = getValidCategories(categories);
+        List<QuestionCategory> validCategories = QuestionCategory.fromStrings(categories);
         if (validCategories.isEmpty()) {
             return Collections.emptyList();
         }
@@ -149,24 +149,6 @@ public class QuestionServiceImpl implements QuestionService {
                 }
             }
         }
-    }
-
-    private List<QuestionCategory> getValidCategories(List<String> categories) {
-        if (categories == null || categories.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return categories.stream()
-                .map(String::toUpperCase)
-                .map(category -> {
-                    try {
-                        return QuestionCategory.valueOf(category);
-                    } catch (IllegalArgumentException e) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
     }
 
     private ResponseDTO<QuestionCategory> findQuestionById(int id) {

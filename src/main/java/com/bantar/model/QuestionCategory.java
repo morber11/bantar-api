@@ -1,5 +1,9 @@
 package com.bantar.model;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
 public enum QuestionCategory {
     ICEBREAKER("Icebreakers"),
     CASUAL("Casual"),
@@ -34,5 +38,23 @@ public enum QuestionCategory {
 
     public static QuestionCategory fromString(String category) {
         return com.bantar.util.EnumUtils.fromStringIgnoreCase(QuestionCategory.class, category);
+    }
+
+    public static List<QuestionCategory> fromStrings(List<String> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return categories.stream()
+                .map(String::toUpperCase)
+                .map(category -> {
+                    try {
+                        return QuestionCategory.valueOf(category);
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 }
