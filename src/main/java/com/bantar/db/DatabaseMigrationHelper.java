@@ -39,4 +39,17 @@ public class DatabaseMigrationHelper {
             return null;
         }
     }
+
+    public static void insertIntoTable(Connection connection, String tableName, String columns, String values) throws Exception {
+        String sql = String.format("INSERT INTO %s (%s) VALUES %s", tableName, columns, values);
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(sql);
+            logger.info("Inserted data into table: {}", tableName);
+        }
+    }
+
+    public static void batchInsertIntoTable(Connection connection, String tableName, String columns, String... valueRows) throws Exception {
+        String values = String.join(", ", valueRows);
+        insertIntoTable(connection, tableName, columns, values);
+    }
 }
