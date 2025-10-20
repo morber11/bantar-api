@@ -14,6 +14,7 @@ public enum DebateCategory {
         this.displayName = displayName;
     }
 
+    @SuppressWarnings("unused")
     public String getDisplayName() {
         return displayName;
     }

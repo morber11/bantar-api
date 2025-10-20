@@ -1,6 +1,9 @@
 package com.bantar.service;
 
 import com.bantar.entity.AiQuestionEntity;
+import com.bantar.entity.QuestionEntity;
+import com.bantar.mapper.QuestionMapper;
+import com.bantar.model.ResponseDTO;
 import com.bantar.model.Question;
 import com.bantar.model.QuestionCategory;
 import com.bantar.repository.AiQuestionRepository;
@@ -10,10 +13,10 @@ import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.PersistenceException;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -48,7 +51,8 @@ public class SlopService {
     public void initialize() {
         try {
             aiQuestionRepository.findAll().forEach(entity -> {
-                Question q = new Question(entity.getText(), entity.getId());
+                ResponseDTO<QuestionCategory> dto = QuestionMapper.toGenericModel(new QuestionEntity(entity.getId(), entity.getText(), null));
+                Question q = new Question(dto.getText(), dto.getId());
                 q.setCategories(List.of(QuestionCategory.ICEBREAKER));
                 try {
                     String key = sha256(entity.getText().trim().toLowerCase());

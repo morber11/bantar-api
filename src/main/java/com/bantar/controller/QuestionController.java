@@ -1,6 +1,6 @@
 package com.bantar.controller;
 
-import com.bantar.model.Question;
+import com.bantar.model.ResponseDTO;
 import com.bantar.service.QuestionServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,8 +30,8 @@ public class QuestionController {
      * @return 200 with question when found, 404 when not found
      */
     @GetMapping("/get/{id}")
-    public ResponseEntity<Question> getQuestionById(@PathVariable int id) {
-        Question result = questionService.getQuestionById(id);
+    public ResponseEntity<ResponseDTO<?>> getQuestionById(@PathVariable int id) {
+    ResponseDTO<?> result = questionService.getById(id);
 
         if (result == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -47,11 +47,11 @@ public class QuestionController {
      * @return 200 with list when available, 404 if not
      */
     @GetMapping("/getByRange")
-    public ResponseEntity<List<Question>> getQuestionsByRange(
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByRange(
             @RequestParam(defaultValue = "0") int startId,
             @RequestParam(defaultValue = "100") int limit
     ) {
-        List<Question> result = questionService.getQuestionsByRange(startId, limit);
+        List<ResponseDTO<?>> result = questionService.getByRange(startId, limit);
 
         if (result == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -65,8 +65,8 @@ public class QuestionController {
      * @return 200 with list when available, 404 if not
      */
     @GetMapping("/getAll")
-    public ResponseEntity<List<Question>> getAllQuestions() {
-        List<Question> result = questionService.getAllQuestions();
+    public ResponseEntity<List<ResponseDTO<?>>> getAllQuestions() {
+        List<ResponseDTO<?>> result = questionService.getAll();
 
         if (result == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -81,10 +81,10 @@ public class QuestionController {
      * @return 200 with list when valid, 400 when category is invalid
      */
     @GetMapping("/getByCategory")
-    public ResponseEntity<List<Question>> getQuestionsByCategory(@RequestParam String category) {
-        List<Question> result = questionService.getQuestionsByCategory(category);
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategory(@RequestParam String category) {
+        List<ResponseDTO<?>> result = questionService.getByCategory(category);
 
-        if (result == null) {
+        if (result == null || result.isEmpty()) {
             return ResponseEntity
                     .badRequest()
                     .build();
@@ -99,10 +99,10 @@ public class QuestionController {
      * @return 200 with list when at least one valid category, 400 when none
      */
     @GetMapping("/getByCategories")
-    public ResponseEntity<List<Question>> getQuestionsByCategories(@RequestParam List<String> categories) {
-        List<Question> result = questionService.getQuestionsByCategories(categories);
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategories(@RequestParam List<String> categories) {
+        List<ResponseDTO<?>> result = questionService.getByCategories(categories);
 
-        if (result == null) {
+        if (result == null || result.isEmpty()) {
             return ResponseEntity
                     .badRequest()
                     .build();
@@ -118,10 +118,10 @@ public class QuestionController {
      * @return 200 with list when at least one question matches all categories, 400 when none
      */
     @GetMapping("/getByFilteredCategories")
-    public ResponseEntity<List<Question>> getQuestionsByFilteredCategories(@RequestParam List<String> categories) {
-        List<Question> result = questionService.getQuestionsByFilteredCategories(categories);
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByFilteredCategories(@RequestParam List<String> categories) {
+        List<ResponseDTO<?>> result = questionService.getByFilteredCategories(categories);
 
-        if (result == null) {
+        if (result == null || result.isEmpty()) {
             return ResponseEntity
                     .badRequest()
                     .build();
@@ -137,7 +137,7 @@ public class QuestionController {
      */
     @PostMapping("/refresh")
     public ResponseEntity<Void> refreshQuestions() {
-        questionService.refreshQuestions();
+        questionService.refresh();
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

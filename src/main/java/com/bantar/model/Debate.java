@@ -2,10 +2,10 @@ package com.bantar.model;
 
 import java.util.List;
 
-public class Question {
+public class Debate {
     private String text;
     private long id;
-    private List<QuestionCategory> categories;
+    private List<DebateCategory> categories;
 
     public String getText() {
         return text;
@@ -15,7 +15,7 @@ public class Question {
         return id;
     }
 
-    public List<QuestionCategory> getCategories() {
+    public List<DebateCategory> getCategories() {
         return categories;
     }
 
@@ -29,16 +29,16 @@ public class Question {
         this.id = id;
     }
 
-    public void setCategories(List<QuestionCategory> categories) {
+    public void setCategories(List<DebateCategory> categories) {
         this.categories = categories;
     }
 
     @SuppressWarnings("unused")
-    public Question() {
+    public Debate() {
 
     }
 
-    public Question(String text, long id) {
+    public Debate(String text, long id) {
         this.text = text;
         this.id = id;
         this.categories = null;
