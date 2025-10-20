@@ -6,6 +6,7 @@ import com.bantar.model.ResponseDTO;
 import com.bantar.model.QuestionCategory;
 import com.bantar.repository.QuestionCategoryRepository;
 import com.bantar.repository.QuestionRepository;
+import com.bantar.service.interfaces.QuestionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

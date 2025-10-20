@@ -1,4 +1,4 @@
-package com.bantar.service;
+package com.bantar.service.interfaces;
 
 public interface SyncService {
     long getLatestChecksum();

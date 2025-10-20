@@ -1,4 +1,4 @@
-package com.bantar.service;
+package com.bantar.service.interfaces;
 
 import com.bantar.model.ResponseDTO;
 

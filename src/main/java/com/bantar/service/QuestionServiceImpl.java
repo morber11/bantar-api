@@ -7,6 +7,7 @@ import com.bantar.model.QuestionCategory;
 import com.bantar.model.ResponseDTO;
 import com.bantar.repository.QuestionCategoryRepository;
 import com.bantar.repository.QuestionRepository;
+import com.bantar.service.interfaces.QuestionService;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

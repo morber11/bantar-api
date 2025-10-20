@@ -1,5 +1,6 @@
 package com.bantar.service;
 
+import com.bantar.service.interfaces.SyncService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
