@@ -1,4 +1,4 @@
-package com.bantar.db.migration.tools;
+package com.bantar.db.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
