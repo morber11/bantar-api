@@ -67,3 +67,6 @@ Thumbs.db
 # Other IDEs/Tools
 *.swp
 *~.nib
+/data/bantar.mv.db
+/.env
+/data/bantar.trace.db

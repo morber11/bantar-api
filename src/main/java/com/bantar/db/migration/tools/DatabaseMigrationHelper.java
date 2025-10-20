@@ -1,4 +1,4 @@
-package com.bantar.db;
+package com.bantar.db.migration.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +37,20 @@ public class DatabaseMigrationHelper {
             System.err.println("Failed to read JSON from resource: " + resourcePath);
             logger.error("an error occurred", e);
             return null;
+        }
+    }
+
+    public static void insertIntoTable(Connection connection, String tableName, String columns, String values) throws Exception {
+        String sql = String.format("INSERT INTO %s (%s) VALUES %s", tableName, columns, values);
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(sql);
+            logger.info("Inserted data into table: {}", tableName);
+        }
+    }
+
+    public static void batchInsertIntoTable(Connection connection, String tableName, String columns, String... valueRows) throws Exception {
+        for (String valueRow : valueRows) {
+            insertIntoTable(connection, tableName, columns, valueRow);
         }
     }
 }

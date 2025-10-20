@@ -8,6 +8,5 @@ import java.util.List;
 
 @Repository
 public interface QuestionCategoryRepository extends JpaRepository<QuestionCategoryEntity, Integer> {
-    List<QuestionCategoryEntity> findByCategoryCode(String categoryCode);
     List<QuestionCategoryEntity> findByQuestionIdIn(List<Long> questionIds);
 }

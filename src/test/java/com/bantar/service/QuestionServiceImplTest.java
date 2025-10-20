@@ -2,10 +2,11 @@ package com.bantar.service;
 
 import com.bantar.entity.QuestionCategoryEntity;
 import com.bantar.entity.QuestionEntity;
-import com.bantar.model.Question;
 import com.bantar.model.QuestionCategory;
+import com.bantar.model.ResponseDTO;
 import com.bantar.repository.QuestionCategoryRepository;
 import com.bantar.repository.QuestionRepository;
+import com.bantar.service.interfaces.QuestionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +22,7 @@ import static org.mockito.Mockito.when;
 
 class QuestionServiceImplTest {
 
-    @Mock
-    private QuestionServiceImpl questionService;
+    private QuestionService questionService;
     @Mock
     private QuestionRepository questionRepository;
     @Mock
@@ -79,11 +79,11 @@ class QuestionServiceImplTest {
 
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
-        Question result = questionService.getQuestionById(1);
+        ResponseDTO<?> dto = questionService.getById(1);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals("What is your favorite color?", result.getText());
+        assertNotNull(dto);
+        assertEquals(1, dto.getId());
+        assertEquals("What is your favorite color?", dto.getText());
     }
 
     @Test
@@ -91,7 +91,7 @@ class QuestionServiceImplTest {
         List<QuestionEntity> questions = createQuestionEntities();
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
-        List<Question> result = questionService.getAllQuestions();
+        List<ResponseDTO<?>> result = questionService.getAll();
 
         assertNotNull(result);
         assertEquals(3, result.size());
@@ -107,7 +107,7 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
 
-        Question result = questionService.getQuestionById(999);
+        ResponseDTO<?> result = questionService.getById(999);
 
         assertNull(result);
     }
@@ -117,9 +117,9 @@ class QuestionServiceImplTest {
         List<QuestionEntity> questions = createQuestionEntities();
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
-        questionService.refreshQuestions();
+        questionService.refresh();
 
-        List<Question> refreshedQuestions = questionService.getAllQuestions();
+        List<ResponseDTO<?>> refreshedQuestions = questionService.getAll();
 
         assertEquals(questions.size(), refreshedQuestions.size());
         for (int i = 0; i < questions.size(); i++) {
@@ -134,7 +134,7 @@ class QuestionServiceImplTest {
         List<QuestionEntity> questions = createQuestionEntities();
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
-        List<Question> result = questionService.getQuestionsByRange(1, 2);
+        List<ResponseDTO<?>> result = questionService.getByRange(1, 2);
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -147,7 +147,7 @@ class QuestionServiceImplTest {
         List<QuestionEntity> questions = createQuestionEntities();
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
-        List<Question> result = questionService.getQuestionsByRange(2, 1000);
+        List<ResponseDTO<?>> result = questionService.getByRange(2, 1000);
 
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -158,7 +158,7 @@ class QuestionServiceImplTest {
         List<QuestionEntity> questions = createQuestionEntities();
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
-        List<Question> result = questionService.getQuestionsByRange(0, 10);
+        List<ResponseDTO<?>> result = questionService.getByRange(0, 10);
 
         assertNotNull(result);
         assertEquals(3, result.size());
@@ -169,7 +169,7 @@ class QuestionServiceImplTest {
         List<QuestionEntity> questions = createQuestionEntities();
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
-        List<Question> result = questionService.getQuestionsByRange(1, 2);
+        List<ResponseDTO<?>> result = questionService.getByRange(1, 2);
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -184,21 +184,23 @@ class QuestionServiceImplTest {
 
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-        List<Question> result = questionService.getQuestionsByCategory("ICEBREAKER");
+        List<ResponseDTO<?>> result = questionService.getByCategory("ICEBREAKER");
 
         assertNotNull(result);
         assertEquals(questions.size(), result.size());
 
-        result.forEach(question ->
-                assertTrue(question.getCategories().contains(QuestionCategory.ICEBREAKER))
-        );
+        result.forEach(dto -> {
+            @SuppressWarnings("unchecked") // skip checking the cast
+            List<QuestionCategory> resultCategories = (List<QuestionCategory>) dto.getCategories();
+            assertTrue(resultCategories.contains(QuestionCategory.ICEBREAKER));
+        });
     }
 
     @Test
     void testGetQuestionsByInvalidCategory() {
-        List<Question> result = questionService.getQuestionsByCategory("invalidCategory");
+        List<ResponseDTO<?>> result = questionService.getByCategory("invalidCategory");
 
-        assertNull(result);
+        assertTrue(result == null || result.isEmpty());
     }
 
     @Test
@@ -211,17 +213,17 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByFilteredCategories(categories);
+        List<ResponseDTO<?>> result = questionService.getByFilteredCategories(categories);
 
         assertNotNull(result);
         assertEquals(1, result.size());
 
-        result.forEach(question -> {
-            boolean hasIcebreaker = question.getCategories().contains(QuestionCategory.ICEBREAKER);
-            boolean hasCasual = question.getCategories().contains(QuestionCategory.CASUAL);
+        @SuppressWarnings("unchecked")
+        List<QuestionCategory> resultCategories = (List<QuestionCategory>) result.get(0).getCategories();
+        boolean hasIcebreaker = resultCategories.contains(QuestionCategory.ICEBREAKER);
+        boolean hasCasual = resultCategories.contains(QuestionCategory.CASUAL);
 
-            assertTrue(hasIcebreaker && hasCasual, "Question should have both ICEBREAKER and CASUAL categories");
-        });
+        assertTrue(hasIcebreaker && hasCasual, "Question should have both ICEBREAKER and CASUAL categories");
     }
 
     @Test
@@ -234,14 +236,14 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByFilteredCategories(categories);
+        List<ResponseDTO<?>> result = questionService.getByFilteredCategories(categories);
 
         assertNotNull(result);
         assertEquals(1, result.size());
 
-        result.forEach(question ->
-                assertTrue(question.getCategories().contains(QuestionCategory.CASUAL))
-        );
+        @SuppressWarnings("unchecked") // do not check the cast
+        List<QuestionCategory> resultCategories = (List<QuestionCategory>) result.get(0).getCategories();
+        assertTrue(resultCategories.contains(QuestionCategory.CASUAL));
     }
 
     @Test
@@ -254,9 +256,9 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByFilteredCategories(categories);
+        List<ResponseDTO<?>> result = questionService.getByFilteredCategories(categories);
 
-        assertNull(result);
+        assertTrue(result == null || result.isEmpty());
     }
 
     @Test
@@ -267,9 +269,9 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByFilteredCategories(Collections.emptyList());
+        List<ResponseDTO<?>> result = questionService.getByFilteredCategories(Collections.emptyList());
 
-        assertNull(result);
+        assertTrue(result == null || result.isEmpty());
     }
 
     @Test
@@ -280,9 +282,9 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByFilteredCategories(null);
+        List<ResponseDTO<?>> result = questionService.getByFilteredCategories(null);
 
-        assertNull(result);
+        assertTrue(result == null || result.isEmpty());
     }
 
     @Test
@@ -295,7 +297,7 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByCategories(categories);
+        List<ResponseDTO<?>> result = questionService.getByCategories(categories);
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -311,11 +313,13 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByCategories(categories);
+        List<ResponseDTO<?>> result = questionService.getByCategories(categories);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertTrue(result.get(0).getCategories().contains(QuestionCategory.SPORTS));
+        @SuppressWarnings("unchecked") // do not check the cast
+        List<QuestionCategory> resultCategories = (List<QuestionCategory>) result.get(0).getCategories();
+        assertTrue(resultCategories.contains(QuestionCategory.SPORTS));
     }
 
     @Test
@@ -328,9 +332,9 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByCategories(categories);
+        List<ResponseDTO<?>> result = questionService.getByCategories(categories);
 
-        assertNull(result);
+        assertTrue(result == null || result.isEmpty());
     }
 
     @Test
@@ -341,9 +345,9 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByCategories(Collections.emptyList());
+        List<ResponseDTO<?>> result = questionService.getByCategories(Collections.emptyList());
 
-        assertNull(result);
+        assertTrue(result == null || result.isEmpty());
     }
 
     @Test
@@ -354,9 +358,9 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
         when(questionCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<Question> result = questionService.getQuestionsByCategories(null);
+        List<ResponseDTO<?>> result = questionService.getByCategories(null);
 
-        assertNull(result);
+        assertTrue(result == null || result.isEmpty());
     }
 
 }

@@ -2,10 +2,12 @@ package com.bantar.service;
 
 import com.bantar.entity.QuestionCategoryEntity;
 import com.bantar.entity.QuestionEntity;
-import com.bantar.model.Question;
+import com.bantar.mapper.QuestionMapper;
 import com.bantar.model.QuestionCategory;
+import com.bantar.model.ResponseDTO;
 import com.bantar.repository.QuestionCategoryRepository;
 import com.bantar.repository.QuestionRepository;
+import com.bantar.service.interfaces.QuestionService;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,15 +17,14 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.bantar.mapper.QuestionMapper.toModel;
-
 @Service
 public class QuestionServiceImpl implements QuestionService {
 
     private static final Logger logger = LogManager.getLogger(QuestionServiceImpl.class);
     private final QuestionRepository questionRepository;
     private final QuestionCategoryRepository questionCategoryRepository;
-    private volatile List<Question> cachedQuestions;
+
+    private volatile List<ResponseDTO<QuestionCategory>> cachedQuestions;
 
     @Autowired
     public QuestionServiceImpl(QuestionRepository questionRepository, QuestionCategoryRepository questionCategoryRepository) {
@@ -43,68 +44,80 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
-    public Question getQuestionById(int id) {
+    public ResponseDTO<?> getById(int id) {
         ensureQuestionsLoaded();
         return findQuestionById(id);
     }
 
     @Override
-    public List<Question> getQuestionsByRange(int startId, int limit) {
+    public List<ResponseDTO<?>> getByRange(int startId, int limit) {
         ensureQuestionsLoaded();
-        return findQuestionsByRange(startId, limit);
+        return findQuestionsByRange(startId, limit).stream()
+                .map(p -> (ResponseDTO<?>) p)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<Question> getAllQuestions() {
+    public List<ResponseDTO<?>> getAll() {
         ensureQuestionsLoaded();
-        return cachedQuestions;
+        return findQuestionsByRange(0, cachedQuestions.size()).stream()
+                .map(p -> (ResponseDTO<?>) p)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<Question> getQuestionsByCategory(String category) {
-        ensureQuestionsLoaded();
+    public List<ResponseDTO<?>> getByCategory(String category) {
+        if (category == null || category.isBlank()) {
+            return Collections.emptyList();
+        }
 
         QuestionCategory questionCategory;
         try {
             questionCategory = QuestionCategory.valueOf(category.toUpperCase());
         } catch (IllegalArgumentException e) {
-            return null;
+            return Collections.emptyList();
         }
-        return findQuestionsByCategory(questionCategory);
-    }
 
-    @Override
-    public List<Question> getQuestionsByCategories(List<String> categories) {
         ensureQuestionsLoaded();
 
-        List<QuestionCategory> validCategories = getValidCategories(categories);
-
-        if (validCategories.isEmpty()) {
-            return null;
-        }
-
-        return findQuestionsByCategories(validCategories);
+        return findQuestionsByCategory(questionCategory).stream()
+                .map(p -> (ResponseDTO<?>) p)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<Question> getQuestionsByFilteredCategories(List<String> categories) {
+    public List<ResponseDTO<?>> getByCategories(List<String> categories) {
+        List<QuestionCategory> validCategories = QuestionCategory.fromStrings(categories);
+        if (validCategories.isEmpty()) {
+            return Collections.emptyList();
+        }
+
         ensureQuestionsLoaded();
 
-        List<QuestionCategory> validCategories = getValidCategories(categories);
-
-        if (validCategories.isEmpty()) {
-            return null;
-        }
-
-        return findQuestionsByFilteredCategories(validCategories);
+        return findQuestionsByCategories(validCategories).stream()
+                .map(p -> (ResponseDTO<?>) p)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public void refreshQuestions() {
+    public List<ResponseDTO<?>> getByFilteredCategories(List<String> categories) {
+        List<QuestionCategory> validCategories = QuestionCategory.fromStrings(categories);
+        if (validCategories.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        ensureQuestionsLoaded();
+
+        return findQuestionsByFilteredCategories(validCategories).stream()
+                .map(p -> (ResponseDTO<?>) p)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void refresh() {
         loadQuestions();
     }
 
-    @SuppressWarnings("SameParameterValue")
     private synchronized void loadQuestions() {
         List<QuestionEntity> icebreakerQuestions = questionRepository.getAllIcebreakers();
 
@@ -120,7 +133,7 @@ public class QuestionServiceImpl implements QuestionService {
 
         cachedQuestions = icebreakerQuestions.stream()
                 .map(q -> {
-                    Question question = toModel(q);
+                    ResponseDTO<QuestionCategory> question = QuestionMapper.toGenericModel(q);
                     List<QuestionCategory> categories = questionCategoriesMap.getOrDefault(q.getId(), Collections.emptyList());
                     question.setCategories(categories);
                     return question;
@@ -138,56 +151,36 @@ public class QuestionServiceImpl implements QuestionService {
         }
     }
 
-    private List<QuestionCategory> getValidCategories(List<String> categories) {
-        if (categories == null || categories.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return categories.stream()
-                .map(String::toUpperCase)
-                .map(category -> {
-                    try {
-                        return QuestionCategory.valueOf(category);
-                    } catch (IllegalArgumentException e) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    private Question findQuestionById(int id) {
+    private ResponseDTO<QuestionCategory> findQuestionById(int id) {
         return cachedQuestions.stream()
                 .filter(q -> q.getId() == id)
                 .findFirst()
                 .orElse(null);
     }
 
-    private List<Question> findQuestionsByRange(int startId, int limit) {
+    private List<ResponseDTO<QuestionCategory>> findQuestionsByRange(int startId, int limit) {
         return cachedQuestions.stream()
                 .skip(startId)
                 .limit(limit)
                 .collect(Collectors.toList());
     }
 
-    private List<Question> findQuestionsByCategory(QuestionCategory category) {
+    private List<ResponseDTO<QuestionCategory>> findQuestionsByCategory(QuestionCategory category) {
         return cachedQuestions.stream()
-                .filter(q -> q.getCategories().contains(category))
+                .filter(d -> d.getCategories() != null && d.getCategories().contains(category))
                 .collect(Collectors.toList());
     }
 
-    private List<Question> findQuestionsByCategories(List<QuestionCategory> requiredCategories) {
+    private List<ResponseDTO<QuestionCategory>> findQuestionsByCategories(List<QuestionCategory> requiredCategories) {
         Set<QuestionCategory> requiredCategorySet = new HashSet<>(requiredCategories);
         return cachedQuestions.stream()
-                .filter(q -> !Collections.disjoint(new HashSet<>(q.getCategories()), requiredCategorySet))
+                .filter(d -> d.getCategories() != null && !Collections.disjoint(new HashSet<>(d.getCategories()), requiredCategorySet))
                 .collect(Collectors.toList());
     }
 
-    private List<Question> findQuestionsByFilteredCategories(List<QuestionCategory> requiredCategories) {
+    private List<ResponseDTO<QuestionCategory>> findQuestionsByFilteredCategories(List<QuestionCategory> requiredCategories) {
         return cachedQuestions.stream()
-                .filter(q -> new HashSet<>(q.getCategories()).containsAll(requiredCategories))
+                .filter(d -> d.getCategories() != null && new HashSet<>(d.getCategories()).containsAll(requiredCategories))
                 .collect(Collectors.toList());
     }
-
-
 }

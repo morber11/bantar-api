@@ -1,4 +1,4 @@
-package com.bantar.service;
+package com.bantar.service.interfaces;
 
 import com.bantar.model.Question;
 import com.fasterxml.jackson.databind.JsonNode;

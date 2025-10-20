@@ -24,7 +24,8 @@ public class QuestionCategoryEntity {
     @JoinColumn(name = "QUESTION_ID", nullable = false)
     private QuestionEntity question;
 
-    public QuestionCategoryEntity() {}
+    public QuestionCategoryEntity() {
+    }
 
     public QuestionCategoryEntity(long questionCategoryId, String categoryCode, QuestionEntity question) {
         this.questionCategoryId = questionCategoryId;
@@ -32,10 +33,12 @@ public class QuestionCategoryEntity {
         this.question = question;
     }
 
+    @SuppressWarnings("unused")
     public long getQuestionCategoryId() {
         return questionCategoryId;
     }
 
+    @SuppressWarnings("unused")
     public void setQuestionCategoryId(long questionCategoryId) {
         this.questionCategoryId = questionCategoryId;
     }
