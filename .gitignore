@@ -69,3 +69,4 @@ Thumbs.db
 *~.nib
 /data/bantar.mv.db
 /.env
+/data/bantar.trace.db

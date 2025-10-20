@@ -6,6 +6,7 @@ import java.util.Objects;
 
 public enum DebateCategory {
     DEBATE("Debate"),
+    CASUAL("Casual"),
     POLICY("Policy"),
     ETHICS("Ethics"),
     TECHNOLOGY("Technology"),

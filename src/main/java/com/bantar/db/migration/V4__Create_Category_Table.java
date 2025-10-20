@@ -1,6 +1,6 @@
 package com.bantar.db.migration;
 
-import com.bantar.db.DatabaseMigrationHelper;
+import com.bantar.db.migration.tools.DatabaseMigrationHelper;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 

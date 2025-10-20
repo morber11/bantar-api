@@ -9,7 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 
 import static com.bantar.config.Constants.QUESTIONS_ICEBREAKERS_WITH_CATEGORY;
-import static com.bantar.db.DatabaseMigrationHelper.readJsonResource;
+import static com.bantar.db.migration.tools.DatabaseMigrationHelper.readJsonResource;
 
 @SuppressWarnings("unused")
 public class V3__Add_Initial_Questions extends BaseJavaMigration {

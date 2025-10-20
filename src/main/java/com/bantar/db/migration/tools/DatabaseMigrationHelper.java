@@ -1,4 +1,4 @@
-package com.bantar.db;
+package com.bantar.db.migration.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +49,8 @@ public class DatabaseMigrationHelper {
     }
 
     public static void batchInsertIntoTable(Connection connection, String tableName, String columns, String... valueRows) throws Exception {
-        String values = String.join(", ", valueRows);
-        insertIntoTable(connection, tableName, columns, values);
+        for (String valueRow : valueRows) {
+            insertIntoTable(connection, tableName, columns, valueRow);
+        }
     }
 }
