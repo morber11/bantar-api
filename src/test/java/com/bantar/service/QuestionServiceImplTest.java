@@ -2,8 +2,8 @@ package com.bantar.service;
 
 import com.bantar.entity.QuestionCategoryEntity;
 import com.bantar.entity.QuestionEntity;
-import com.bantar.model.ResponseDTO;
 import com.bantar.model.QuestionCategory;
+import com.bantar.model.ResponseDTO;
 import com.bantar.repository.QuestionCategoryRepository;
 import com.bantar.repository.QuestionRepository;
 import com.bantar.service.interfaces.QuestionService;
@@ -79,7 +79,7 @@ class QuestionServiceImplTest {
 
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
-    ResponseDTO<?> dto = questionService.getById(1);
+        ResponseDTO<?> dto = questionService.getById(1);
 
         assertNotNull(dto);
         assertEquals(1, dto.getId());
@@ -107,7 +107,7 @@ class QuestionServiceImplTest {
         when(questionRepository.getAllIcebreakers()).thenReturn(questions);
 
 
-    ResponseDTO<?> result = questionService.getById(999);
+        ResponseDTO<?> result = questionService.getById(999);
 
         assertNull(result);
     }
