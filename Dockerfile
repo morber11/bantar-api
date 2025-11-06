@@ -17,13 +17,21 @@ RUN ./mvnw -B -ntp -DskipTests package
 
 ## Runtime stage: use a slim JRE and run as non-root
 FROM eclipse-temurin:17-jre-jammy
+
+# create a dedicated system user and group for running the app
 RUN addgroup --system app && adduser --system --ingroup app app
+
+# application directory and persistent data directory
 WORKDIR /app
+RUN mkdir -p /app/data
 
 # Copy fat jar from build stage
 COPY --from=build /workspace/target/*.jar app.jar
-RUN chown app:app /app/app.jar
 
+# ensure app user owns the application files and data directory
+RUN chown -R app:app /app && chmod -R 0755 /app
+
+# switch to non-root user for runtime
 USER app
 EXPOSE 8080
 # JVM tuned for container environments: respect container memory and limit heap to a percentage
