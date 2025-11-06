@@ -76,6 +76,17 @@ public class V12__Insert_additional_questions extends BaseJavaMigration {
                             }
                         }
                     }
+
+                    // Ensure every question is also mapped to the ICEBREAKER category (idempotent)
+                    selectCategoryStmt.setInt(1, questionId);
+                    selectCategoryStmt.setString(2, "ICEBREAKER");
+                    try (ResultSet ice = selectCategoryStmt.executeQuery()) {
+                        if (ice.next() && ice.getInt(1) == 0) {
+                            insertCategoryStmt.setInt(1, questionId);
+                            insertCategoryStmt.setString(2, "ICEBREAKER");
+                            insertCategoryStmt.addBatch();
+                        }
+                    }
                 }
             }
 
