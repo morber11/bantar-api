@@ -53,4 +53,18 @@ public class DatabaseMigrationHelper {
             insertIntoTable(connection, tableName, columns, valueRow);
         }
     }
+
+    public static void setIdentitySequence(Connection connection, String tableName, String idColumn) {
+        try (Statement s = connection.createStatement();
+             ResultSet rs = s.executeQuery("SELECT MAX(" + idColumn + ") FROM " + tableName)) {
+            if (rs.next()) {
+                int maxId = rs.getInt(1);
+                int restart = Math.max(1, maxId + 1);
+                s.execute("ALTER TABLE " + tableName + " ALTER COLUMN " + idColumn + " RESTART WITH " + restart);
+                logger.info("Set identity for {}.{} to start at {}", tableName, idColumn, restart);
+            }
+        } catch (Exception e) {
+            logger.debug("Could not set identity sequence for {}.{}: {}", tableName, idColumn, e.getMessage());
+        }
+    }
 }
