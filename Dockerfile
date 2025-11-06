@@ -1,15 +1,30 @@
-# build stage
+## Multi-stage Dockerfile optimized for caching and smaller runtime image
+## Build stage: cache dependencies separately to leverage Docker layer caching
 FROM maven:3.9-eclipse-temurin-17 AS build
-WORKDIR /build
-COPY .mvn .mvn
-COPY mvnw pom.xml ./
-COPY src src
-RUN chmod +x ./mvnw && sed -i 's/\r$//' ./mvnw
-RUN ./mvnw -DskipTests package
+WORKDIR /workspace
 
-# runtime stage
-FROM eclipse-temurin:17-jre
+# Copy only the files needed to download dependencies first (cache layer)
+COPY mvnw pom.xml ./
+COPY .mvn .mvn
+RUN chmod +x ./mvnw && sed -i 's/\r$//' ./mvnw
+
+# Download dependencies into the image's local repo layer so they are cached
+RUN ./mvnw -B -ntp -DskipTests dependency:go-offline
+
+# Copy the source and build the application
+COPY src ./src
+RUN ./mvnw -B -ntp -DskipTests package
+
+## Runtime stage: use a slim JRE and run as non-root
+FROM eclipse-temurin:17-jre-jammy
+RUN addgroup --system app && adduser --system --ingroup app app
 WORKDIR /app
-COPY --from=build /build/target/*.jar app.jar
+
+# Copy fat jar from build stage
+COPY --from=build /workspace/target/*.jar app.jar
+RUN chown app:app /app/app.jar
+
+USER app
 EXPOSE 8080
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+# JVM tuned for container environments: respect container memory and limit heap to a percentage
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]
