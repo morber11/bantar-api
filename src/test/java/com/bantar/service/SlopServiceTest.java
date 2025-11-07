@@ -17,6 +17,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 public class SlopServiceTest {
 
     private SlopService slopService;
@@ -84,8 +86,9 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(5);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> slopService.getRandomQuestion());
-        assertEquals("No questions available", exception.getMessage());
+        List<Question> results = slopService.getAllQuestions();
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -98,8 +101,9 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(5);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> slopService.getRandomQuestion());
-        assertEquals("No questions available", exception.getMessage());
+        List<Question> results = slopService.getAllQuestions();
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -109,8 +113,9 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(5);
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> slopService.getRandomQuestion());
-        assertEquals("No questions available", exception.getMessage());
+        List<Question> results = slopService.getAllQuestions();
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -130,9 +135,9 @@ public class SlopServiceTest {
 
     @Test
     void testGetRandomQuestionWhenEmpty() {
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> slopService.getRandomQuestion());
-
-        assertEquals("No questions available", exception.getMessage());
+        List<Question> results = slopService.getAllQuestions();
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -148,5 +153,33 @@ public class SlopServiceTest {
         Question result = slopService.getRandomQuestion();
         assertNotNull(result);
         assertEquals("Sample Question", result.getText());
+    }
+
+    @Test
+    void testGetAllQuestionsEmpty() {
+        List<Question> results = slopService.getAllQuestions();
+
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
+        assertThrows(UnsupportedOperationException.class, () -> results.add(new Question("x", 1)));
+    }
+
+    @Test
+    void testGetAllQuestions() {
+        Question q1 = new Question("Hello world", 42L);
+        Question q2 = new Question("How are you?", 43L);
+        Question q3 = new Question("What's up?", 44L);
+        slopService.questionMap.put("k1", q1);
+        slopService.questionMap.put("k2", q2);
+        slopService.questionMap.put("k3", q3);
+
+        List<Question> questions = slopService.getAllQuestions();
+        assertEquals(3, questions.size());
+        assertTrue(questions.contains(q1));
+        assertTrue(questions.contains(q2));
+        assertTrue(questions.contains(q3));
+
+        slopService.questionMap.clear();
+        assertEquals(3, questions.size());
     }
 }

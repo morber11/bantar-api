@@ -90,12 +90,16 @@ public class SlopService {
 
     public Question getRandomQuestion() {
         if (questionMap.isEmpty()) {
-            throw new IllegalStateException("No questions available");
+            return null;
         }
 
         List<Question> questions = new ArrayList<>(questionMap.values());
         int randomIndex = ThreadLocalRandom.current().nextInt(questions.size());
         return questions.get(randomIndex);
+    }
+
+    public List<Question> getAllQuestions() {
+        return List.copyOf(questionMap.values());
     }
 
     private void parseAndStoreQuestions(String jsonResponse) throws JsonProcessingException {

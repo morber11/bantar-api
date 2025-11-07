@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
 
 @SuppressWarnings("unused")
 @RestController
@@ -29,5 +30,16 @@ public class SlopController {
         }
 
         return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @GetMapping("/getAll")
+    public ResponseEntity<List<Question>> getAllQuestions() {
+        List<Question> results = slopService.getAllQuestions();
+
+        if (results == null || results.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+
+        return new ResponseEntity<>(results, HttpStatus.OK);
     }
 }
