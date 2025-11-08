@@ -3,7 +3,7 @@ package com.bantar.service;
 import com.bantar.entity.DebateCategoryEntity;
 import com.bantar.entity.DebateEntity;
 import com.bantar.model.DebateCategory;
-import com.bantar.model.ResponseDTO;
+import com.bantar.dto.ResponseDTO;
 import com.bantar.repository.DebateCategoryRepository;
 import com.bantar.repository.DebateRepository;
 import org.junit.jupiter.api.AfterEach;

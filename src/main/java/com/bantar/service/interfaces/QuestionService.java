@@ -1,6 +1,6 @@
 package com.bantar.service.interfaces;
 
-import com.bantar.model.ResponseDTO;
+import com.bantar.dto.ResponseDTO;
 
 import java.util.List;
 
