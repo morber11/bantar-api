@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("unused")
 @Component
 public class DebateMapper {
     public static Debate toModel(DebateEntity entity) { return new Debate(entity.getText(), entity.getId()); }
