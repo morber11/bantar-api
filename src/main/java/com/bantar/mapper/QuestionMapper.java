@@ -2,7 +2,7 @@ package com.bantar.mapper;
 
 import com.bantar.entity.QuestionCategoryEntity;
 import com.bantar.entity.QuestionEntity;
-import com.bantar.model.ResponseDTO;
+import com.bantar.dto.ResponseDTO;
 import com.bantar.model.QuestionCategory;
 import org.springframework.stereotype.Component;
 

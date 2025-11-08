@@ -3,7 +3,7 @@ package com.bantar.service;
 import com.bantar.entity.QuestionCategoryEntity;
 import com.bantar.entity.QuestionEntity;
 import com.bantar.model.QuestionCategory;
-import com.bantar.model.ResponseDTO;
+import com.bantar.dto.ResponseDTO;
 import com.bantar.repository.QuestionCategoryRepository;
 import com.bantar.repository.QuestionRepository;
 import com.bantar.service.interfaces.QuestionService;

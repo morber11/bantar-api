@@ -3,7 +3,7 @@ package com.bantar.service;
 import com.bantar.entity.AiQuestionEntity;
 import com.bantar.entity.QuestionEntity;
 import com.bantar.mapper.QuestionMapper;
-import com.bantar.model.ResponseDTO;
+import com.bantar.dto.ResponseDTO;
 import com.bantar.model.Question;
 import com.bantar.model.QuestionCategory;
 import com.bantar.repository.AiQuestionRepository;
@@ -88,18 +88,22 @@ public class SlopService {
         }
     }
 
-    public Question getRandomQuestion() {
+    public ResponseDTO<QuestionCategory> getRandomQuestion() {
         if (questionMap.isEmpty()) {
             return null;
         }
 
         List<Question> questions = new ArrayList<>(questionMap.values());
         int randomIndex = ThreadLocalRandom.current().nextInt(questions.size());
-        return questions.get(randomIndex);
+        Question q = questions.get(randomIndex);
+        return new ResponseDTO<>(q.getText(), q.getId(), q.getCategories());
     }
 
-    public List<Question> getAllQuestions() {
-        return List.copyOf(questionMap.values());
+    public List<ResponseDTO<QuestionCategory>> getAllQuestions() {
+        List<ResponseDTO<QuestionCategory>> dtos = questionMap.values().stream()
+                .map(q -> new ResponseDTO<>(q.getText(), q.getId(), q.getCategories()))
+                .toList();
+        return List.copyOf(dtos);
     }
 
     private void parseAndStoreQuestions(String jsonResponse) throws JsonProcessingException {

@@ -3,7 +3,7 @@ package com.bantar.mapper;
 import com.bantar.entity.DebateCategoryEntity;
 import com.bantar.entity.DebateEntity;
 import com.bantar.model.Debate;
-import com.bantar.model.ResponseDTO;
+import com.bantar.dto.ResponseDTO;
 import com.bantar.model.DebateCategory;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("unused")
 @Component
 public class DebateMapper {
     public static Debate toModel(DebateEntity entity) { return new Debate(entity.getText(), entity.getId()); }

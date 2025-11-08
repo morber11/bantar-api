@@ -2,9 +2,8 @@ package com.bantar.service;
 
 import com.bantar.entity.DebateCategoryEntity;
 import com.bantar.entity.DebateEntity;
-import com.bantar.mapper.DebateMapper;
 import com.bantar.model.DebateCategory;
-import com.bantar.model.ResponseDTO;
+import com.bantar.dto.ResponseDTO;
 import com.bantar.repository.DebateCategoryRepository;
 import com.bantar.repository.DebateRepository;
 import com.bantar.service.interfaces.QuestionService;
@@ -133,10 +132,8 @@ public class DebateService implements QuestionService {
 
         cachedDebates = debates.stream()
                 .map(q -> {
-                    ResponseDTO<DebateCategory> debate = DebateMapper.toGenericModel(q);
                     List<DebateCategory> categories = debateCategoriesMap.getOrDefault(q.getId(), Collections.emptyList());
-                    debate.setCategories(categories);
-                    return debate;
+                    return new ResponseDTO<>(q.getText(), q.getId(), categories);
                 })
                 .collect(Collectors.toList());
     }

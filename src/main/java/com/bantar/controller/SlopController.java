@@ -1,6 +1,7 @@
 package com.bantar.controller;
 
-import com.bantar.model.Question;
+import com.bantar.dto.ResponseDTO;
+import com.bantar.model.QuestionCategory;
 import com.bantar.service.SlopService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,19 +23,19 @@ public class SlopController {
     }
 
     @GetMapping("/getRandom")
-    public ResponseEntity<Question> getRandomQuestion() {
-        Question result = slopService.getRandomQuestion();
+    public ResponseEntity<ResponseDTO<QuestionCategory>> getRandomQuestion() {
+        ResponseDTO<QuestionCategory> dto = slopService.getRandomQuestion();
 
-        if (result == null) {
+        if (dto == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return new ResponseEntity<>(dto, HttpStatus.OK);
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<Question>> getAllQuestions() {
-        List<Question> results = slopService.getAllQuestions();
+    public ResponseEntity<List<ResponseDTO<QuestionCategory>>> getAllQuestions() {
+        List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
 
         if (results == null || results.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);

@@ -2,6 +2,8 @@ package com.bantar.service;
 
 import com.bantar.entity.AiQuestionEntity;
 import com.bantar.model.Question;
+import com.bantar.dto.ResponseDTO;
+import com.bantar.model.QuestionCategory;
 import com.bantar.repository.AiQuestionRepository;
 import com.google.genai.Client;
 import com.google.genai.Models;
@@ -18,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SlopServiceTest {
 
@@ -53,9 +56,9 @@ public class SlopServiceTest {
                 .thenReturn(response);
         slopService.generateQuestions(5);
 
-        Question result = slopService.getRandomQuestion();
-        assertNotNull(result);
-        assertEquals("Question 1", result.getText());
+    ResponseDTO<QuestionCategory> result = slopService.getRandomQuestion();
+    assertNotNull(result);
+    assertEquals("Question 1", result.getText());
 
         Mockito.verify(mockAiQuestionRepository, Mockito.atLeastOnce()).save(Mockito.argThat(entity ->
                 entity != null && entity.getText().equals("Question 1") && entity.getHash() != null
@@ -71,10 +74,10 @@ public class SlopServiceTest {
         // manually initialize because spring never calls it
         slopService.initialize();
 
-        Question q = slopService.getRandomQuestion();
+    ResponseDTO<QuestionCategory> q = slopService.getRandomQuestion();
 
-        assertNotNull(q);
-        assertEquals("Persisted Question", q.getText());
+    assertNotNull(q);
+    assertEquals("Persisted Question", q.getText());
     }
 
     @Test
@@ -86,9 +89,9 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(5);
 
-        List<Question> results = slopService.getAllQuestions();
-        assertNotNull(results);
-        assertTrue(results.isEmpty());
+    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
+    assertNotNull(results);
+    assertTrue(results.isEmpty());
     }
 
     @Test
@@ -101,9 +104,9 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(5);
 
-        List<Question> results = slopService.getAllQuestions();
-        assertNotNull(results);
-        assertTrue(results.isEmpty());
+    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
+    assertNotNull(results);
+    assertTrue(results.isEmpty());
     }
 
     @Test
@@ -113,9 +116,9 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(5);
 
-        List<Question> results = slopService.getAllQuestions();
-        assertNotNull(results);
-        assertTrue(results.isEmpty());
+    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
+    assertNotNull(results);
+    assertTrue(results.isEmpty());
     }
 
     @Test
@@ -128,16 +131,16 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(3);
 
-        Question result = slopService.getRandomQuestion();
-        assertNotNull(result);
-        assertTrue(result.getText().startsWith("Question"));
+    ResponseDTO<QuestionCategory> result = slopService.getRandomQuestion();
+    assertNotNull(result);
+    assertTrue(result.getText().startsWith("Question"));
     }
 
     @Test
     void testGetRandomQuestionWhenEmpty() {
-        List<Question> results = slopService.getAllQuestions();
-        assertNotNull(results);
-        assertTrue(results.isEmpty());
+    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
+    assertNotNull(results);
+    assertTrue(results.isEmpty());
     }
 
     @Test
@@ -150,18 +153,18 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(1);
 
-        Question result = slopService.getRandomQuestion();
-        assertNotNull(result);
-        assertEquals("Sample Question", result.getText());
+    ResponseDTO<QuestionCategory> result = slopService.getRandomQuestion();
+    assertNotNull(result);
+    assertEquals("Sample Question", result.getText());
     }
 
     @Test
     void testGetAllQuestionsEmpty() {
-        List<Question> results = slopService.getAllQuestions();
+    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
 
-        assertNotNull(results);
-        assertTrue(results.isEmpty());
-        assertThrows(UnsupportedOperationException.class, () -> results.add(new Question("x", 1)));
+    assertNotNull(results);
+    assertTrue(results.isEmpty());
+    assertThrows(UnsupportedOperationException.class, () -> results.add(new ResponseDTO<>("x", 1, null)));
     }
 
     @Test
@@ -173,13 +176,14 @@ public class SlopServiceTest {
         slopService.questionMap.put("k2", q2);
         slopService.questionMap.put("k3", q3);
 
-        List<Question> questions = slopService.getAllQuestions();
-        assertEquals(3, questions.size());
-        assertTrue(questions.contains(q1));
-        assertTrue(questions.contains(q2));
-        assertTrue(questions.contains(q3));
+    List<ResponseDTO<QuestionCategory>> questions = slopService.getAllQuestions();
+    assertEquals(3, questions.size());
+    List<String> texts = questions.stream().map(ResponseDTO::getText).toList();
+    assertTrue(texts.contains("Hello world"));
+    assertTrue(texts.contains("How are you?"));
+    assertTrue(texts.contains("What's up?"));
 
-        slopService.questionMap.clear();
-        assertEquals(3, questions.size());
+    slopService.questionMap.clear();
+    assertEquals(3, questions.size());
     }
 }

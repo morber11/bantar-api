@@ -2,9 +2,8 @@ package com.bantar.service;
 
 import com.bantar.entity.QuestionCategoryEntity;
 import com.bantar.entity.QuestionEntity;
-import com.bantar.mapper.QuestionMapper;
 import com.bantar.model.QuestionCategory;
-import com.bantar.model.ResponseDTO;
+import com.bantar.dto.ResponseDTO;
 import com.bantar.repository.QuestionCategoryRepository;
 import com.bantar.repository.QuestionRepository;
 import com.bantar.service.interfaces.QuestionService;
@@ -133,10 +132,8 @@ public class QuestionServiceImpl implements QuestionService {
 
         cachedQuestions = icebreakerQuestions.stream()
                 .map(q -> {
-                    ResponseDTO<QuestionCategory> question = QuestionMapper.toGenericModel(q);
                     List<QuestionCategory> categories = questionCategoriesMap.getOrDefault(q.getId(), Collections.emptyList());
-                    question.setCategories(categories);
-                    return question;
+                    return new ResponseDTO<>(q.getText(), q.getId(), categories);
                 })
                 .collect(Collectors.toList());
     }
