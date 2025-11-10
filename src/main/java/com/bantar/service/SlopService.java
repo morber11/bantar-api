@@ -1,9 +1,9 @@
 package com.bantar.service;
 
+import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.AiQuestionEntity;
 import com.bantar.entity.QuestionEntity;
 import com.bantar.mapper.QuestionMapper;
-import com.bantar.dto.ResponseDTO;
 import com.bantar.model.Question;
 import com.bantar.model.QuestionCategory;
 import com.bantar.repository.AiQuestionRepository;
@@ -38,7 +38,11 @@ public class SlopService {
     Map<String, Question> questionMap = new ConcurrentHashMap<>();
     private final Client aiClient;
     private final AiQuestionRepository aiQuestionRepository;
+
     private static final int INITIAL_QUESTION_COUNT = 30;
+    private static final int TARGET_QUESTION_COUNT = 100;
+    private static final int BATCH_GENERATE_COUNT = 20;
+    private static final int MAX_BATCH_ATTEMPTS = 10;
 
     @Autowired
     public SlopService(Client aiClient, AiQuestionRepository aiQuestionRepository) {
@@ -64,8 +68,12 @@ public class SlopService {
             });
             logger.info("{} ai questions preloaded from database", questionMap.size());
 
-
             generateQuestions(INITIAL_QUESTION_COUNT);
+
+            // ensure we always have 100 questions in the initial repository
+            if (aiQuestionRepository.count() < TARGET_QUESTION_COUNT) {
+                seedRepository();
+            }
         } catch (Exception e) {
             logger.error("An error occurred during the initial question generation", e);
         }
@@ -167,5 +175,24 @@ public class SlopService {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    private void seedRepository() {
+        try {
+            int attempts = 0;
+            while (aiQuestionRepository.count() < TARGET_QUESTION_COUNT && attempts < MAX_BATCH_ATTEMPTS) {
+                logger.info("AI question count is {} - generating {} more (attempt {}/{})",
+                        aiQuestionRepository.count(), BATCH_GENERATE_COUNT, attempts + 1, MAX_BATCH_ATTEMPTS);
+
+                generateQuestions(BATCH_GENERATE_COUNT);
+                ++attempts;
+            }
+            if (aiQuestionRepository.count() < TARGET_QUESTION_COUNT) {
+                logger.warn("Reached max batch attempts but only have {} AI questions; target is {}",
+                        aiQuestionRepository.count(), TARGET_QUESTION_COUNT);
+            }
+        } catch (Exception ex) {
+            logger.error("Error while seeding AI questions", ex);
+        }
     }
 }
