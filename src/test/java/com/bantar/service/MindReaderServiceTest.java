@@ -143,7 +143,7 @@ class MindReaderServiceTest {
 
         List<ResponseDTO<?>> list = mindReaderService.getByCategory("INVALID");
 
-        assertTrue(list == null || list.isEmpty());
+        assertTrue(list.isEmpty());
     }
 
     @Test
@@ -153,7 +153,7 @@ class MindReaderServiceTest {
 
         List<ResponseDTO<?>> list = mindReaderService.getByCategories(List.of("WRONG", "BAD"));
 
-        assertTrue(list == null || list.isEmpty());
+        assertTrue(list.isEmpty());
     }
 
     @Test
@@ -163,6 +163,6 @@ class MindReaderServiceTest {
 
         List<ResponseDTO<?>> list = mindReaderService.getByFilteredCategories(List.of("FUN", "INSIGHT")); // none match both
 
-        assertTrue(list == null || list.isEmpty());
+        assertTrue(list.isEmpty());
     }
 }
