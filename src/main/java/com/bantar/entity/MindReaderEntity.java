@@ -23,6 +23,10 @@ public class MindReaderEntity {
     }
 
     @SuppressWarnings("unused")
+    public MindReaderEntity() {
+    }
+
+    @SuppressWarnings("unused")
     public MindReaderEntity(long id, String text, List<MindReaderCategoryEntity> categories) {
         this.id = id;
         this.text = text;
