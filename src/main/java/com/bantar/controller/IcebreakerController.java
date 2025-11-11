@@ -1,7 +1,7 @@
 package com.bantar.controller;
 
 import com.bantar.dto.ResponseDTO;
-import com.bantar.service.QuestionServiceImpl;
+import com.bantar.service.IcebreakerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,28 +10,29 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controller for question endpoints.
+ * Controller for icebreaker endpoints.
  */
 @SuppressWarnings("unused")
 @RestController
-@RequestMapping("/questions")
-public class QuestionController {
+@RequestMapping("/icebreakers")
+public class IcebreakerController {
 
-    private final QuestionServiceImpl questionService;
+    private final IcebreakerService questionService;
 
     @Autowired
-    public QuestionController(QuestionServiceImpl questionService) {
+    public IcebreakerController(IcebreakerService questionService) {
         this.questionService = questionService;
     }
 
     /**
      * Get a single question by id.
+     *
      * @param id question id
      * @return 200 with question when found, 404 when not found
      */
     @GetMapping("/get/{id}")
     public ResponseEntity<ResponseDTO<?>> getQuestionById(@PathVariable int id) {
-    ResponseDTO<?> result = questionService.getById(id);
+        ResponseDTO<?> result = questionService.getById(id);
 
         if (result == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -42,8 +43,9 @@ public class QuestionController {
 
     /**
      * Get a list of questions by range.
+     *
      * @param startId index to start from (default 0)
-     * @param limit max number of questions to return (default 100)
+     * @param limit   max number of questions to return (default 100)
      * @return 200 with list when available, 404 if not
      */
     @GetMapping("/getByRange")
@@ -62,6 +64,7 @@ public class QuestionController {
 
     /**
      * Get all questions.
+     *
      * @return 200 with list when available, 404 if not
      */
     @GetMapping("/getAll")
@@ -77,6 +80,7 @@ public class QuestionController {
 
     /**
      * Get questions that match a single category.
+     *
      * @param category category name (case-insensitive)
      * @return 200 with list when valid, 400 when category is invalid
      */
@@ -95,6 +99,7 @@ public class QuestionController {
 
     /**
      * Get questions that match any of the supplied categories (inclusive).
+     *
      * @param categories list of category names
      * @return 200 with list when at least one valid category, 400 when none
      */
@@ -113,6 +118,7 @@ public class QuestionController {
 
     /**
      * Get questions that match all the supplied categories (strict filter).
+     *
      * @param categories list of category names
      * @return 200 with list when at least one question matches all categories, 400 when none
      */
@@ -132,6 +138,7 @@ public class QuestionController {
     /**
      * Refresh questions from the data source.
      * This reloads the cached questions.
+     *
      * @return 200 on success
      */
     @PostMapping("/refresh")

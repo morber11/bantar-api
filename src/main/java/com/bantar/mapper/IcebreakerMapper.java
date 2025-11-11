@@ -1,9 +1,9 @@
 package com.bantar.mapper;
 
-import com.bantar.entity.QuestionCategoryEntity;
-import com.bantar.entity.QuestionEntity;
 import com.bantar.dto.ResponseDTO;
-import com.bantar.model.QuestionCategory;
+import com.bantar.entity.IcebreakerCategoryEntity;
+import com.bantar.entity.IcebreakerEntity;
+import com.bantar.model.IcebreakerCategory;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -12,20 +12,20 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
-public class QuestionMapper {
-    public static ResponseDTO<QuestionCategory> toGenericModel(QuestionEntity entity) {
+public class IcebreakerMapper {
+    public static ResponseDTO<IcebreakerCategory> toGenericModel(IcebreakerEntity entity) {
         if (entity == null) {
             return null;
         }
 
-        List<QuestionCategory> categories;
-        List<QuestionCategoryEntity> ents = entity.getCategories();
+        List<IcebreakerCategory> categories;
+        List<IcebreakerCategoryEntity> ents = entity.getCategories();
         if (ents != null) {
             categories = ents.stream()
                     .filter(Objects::nonNull)
-                    .map(QuestionCategoryEntity::getCategory)
+                    .map(IcebreakerCategoryEntity::getCategory)
                     .filter(Objects::nonNull)
-                    .map(QuestionCategory::fromString)
+                    .map(IcebreakerCategory::fromString)
                     .collect(Collectors.toList());
         } else {
             categories = Collections.emptyList();

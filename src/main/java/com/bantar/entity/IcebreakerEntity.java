@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "QUESTION")
-public class QuestionEntity {
+@Table(name = "ICEBREAKER")
+public class IcebreakerEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -15,17 +15,17 @@ public class QuestionEntity {
     private String text;
 
     @OneToMany(mappedBy = "question", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<QuestionCategoryEntity> categories;
+    private List<com.bantar.entity.IcebreakerCategoryEntity> categories;
 
-    public QuestionEntity() {
+    public IcebreakerEntity() {
     }
 
-    public QuestionEntity(long id, String text) {
+    public IcebreakerEntity(long id, String text) {
         this.id = id;
         this.text = text;
     }
 
-    public QuestionEntity(long id, String text, List<QuestionCategoryEntity> categories) {
+    public IcebreakerEntity(long id, String text, List<com.bantar.entity.IcebreakerCategoryEntity> categories) {
         this.id = id;
         this.text = text;
         this.categories = categories;
@@ -47,11 +47,11 @@ public class QuestionEntity {
         this.text = text;
     }
 
-    public List<QuestionCategoryEntity> getCategories() {
+    public List<com.bantar.entity.IcebreakerCategoryEntity> getCategories() {
         return categories;
     }
 
-    public void setCategories(List<QuestionCategoryEntity> categories) {
+    public void setCategories(List<com.bantar.entity.IcebreakerCategoryEntity> categories) {
         this.categories = categories;
     }
 }

@@ -1,11 +1,11 @@
 package com.bantar.service.interfaces;
 
-import com.bantar.model.Question;
+import com.bantar.model.Icebreaker;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
 
 public interface QuestionMappingService {
-    List<Question> getQuestionsFromJsonResource(String resource);
-    List<Question> mapJsonToQuestions(JsonNode jsonNode);
+    List<Icebreaker> getQuestionsFromJsonResource(String resource);
+    List<Icebreaker> mapJsonToQuestions(JsonNode jsonNode);
 }
