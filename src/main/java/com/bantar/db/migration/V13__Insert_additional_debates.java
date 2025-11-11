@@ -208,8 +208,8 @@ public class V13__Insert_additional_debates extends BaseJavaMigration {
         }
 
         // Always include DEBATE as a general category for discoverability
-        if (!cats.contains(DebateCategory.DEBATE.name())) {
-            cats.add(0, DebateCategory.DEBATE.name());
+        if (!cats.contains("DEBATE")) {
+            cats.add(0, "DEBATE");
         }
 
         return cats;

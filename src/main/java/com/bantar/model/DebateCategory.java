@@ -5,7 +5,6 @@ import com.bantar.util.EnumUtils;
 import java.util.List;
 
 public enum DebateCategory {
-    DEBATE("Debate"),
     CASUAL("Casual"),
     POLICY("Policy"),
     ETHICS("Ethics"),
