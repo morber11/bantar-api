@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @SuppressWarnings("unused")
 @Repository
-public interface MindReaderCategoryRepository extends JpaRepository<MindReaderCategoryEntity, Integer> {
+public interface MindReaderCategoryRepository extends JpaRepository<MindReaderCategoryEntity, Long> {
 }

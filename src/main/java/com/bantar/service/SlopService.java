@@ -2,10 +2,10 @@ package com.bantar.service;
 
 import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.AiQuestionEntity;
-import com.bantar.entity.QuestionEntity;
-import com.bantar.mapper.QuestionMapper;
-import com.bantar.model.Question;
-import com.bantar.model.QuestionCategory;
+import com.bantar.entity.IcebreakerEntity;
+import com.bantar.mapper.IcebreakerMapper;
+import com.bantar.model.Icebreaker;
+import com.bantar.model.IcebreakerCategory;
 import com.bantar.repository.AiQuestionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,7 +35,7 @@ import static com.bantar.config.Constants.ICEBREAKERS_LLM_PROMPT;
 public class SlopService {
 
     private static final Logger logger = LogManager.getLogger(SlopService.class);
-    Map<String, Question> questionMap = new ConcurrentHashMap<>();
+    Map<String, Icebreaker> questionMap = new ConcurrentHashMap<>();
     private final Client aiClient;
     private final AiQuestionRepository aiQuestionRepository;
 
@@ -55,9 +55,9 @@ public class SlopService {
     public void initialize() {
         try {
             aiQuestionRepository.findAll().forEach(entity -> {
-                ResponseDTO<QuestionCategory> dto = QuestionMapper.toGenericModel(new QuestionEntity(entity.getId(), entity.getText(), null));
-                Question q = new Question(dto.getText(), dto.getId());
-                q.setCategories(List.of(QuestionCategory.ICEBREAKER));
+                ResponseDTO<IcebreakerCategory> dto = IcebreakerMapper.toGenericModel(new IcebreakerEntity(entity.getId(), entity.getText(), null));
+                Icebreaker q = new Icebreaker(dto.getText(), dto.getId());
+                q.setCategories(List.of(IcebreakerCategory.ICEBREAKER));
                 try {
                     String key = sha256(entity.getText().trim().toLowerCase());
                     questionMap.putIfAbsent(key, q);
@@ -96,19 +96,19 @@ public class SlopService {
         }
     }
 
-    public ResponseDTO<QuestionCategory> getRandomQuestion() {
+    public ResponseDTO<IcebreakerCategory> getRandomQuestion() {
         if (questionMap.isEmpty()) {
             return null;
         }
 
-        List<Question> questions = new ArrayList<>(questionMap.values());
-        int randomIndex = ThreadLocalRandom.current().nextInt(questions.size());
-        Question q = questions.get(randomIndex);
+        List<Icebreaker> icebreakers = new ArrayList<>(questionMap.values());
+        int randomIndex = ThreadLocalRandom.current().nextInt(icebreakers.size());
+        Icebreaker q = icebreakers.get(randomIndex);
         return new ResponseDTO<>(q.getText(), q.getId(), q.getCategories());
     }
 
-    public List<ResponseDTO<QuestionCategory>> getAllQuestions() {
-        List<ResponseDTO<QuestionCategory>> dtos = questionMap.values().stream()
+    public List<ResponseDTO<IcebreakerCategory>> getAllQuestions() {
+        List<ResponseDTO<IcebreakerCategory>> dtos = questionMap.values().stream()
                 .map(q -> new ResponseDTO<>(q.getText(), q.getId(), q.getCategories()))
                 .toList();
         return List.copyOf(dtos);
@@ -118,11 +118,11 @@ public class SlopService {
         String cleaned = cleanJsonResponse(jsonResponse);
         ObjectMapper mapper = new ObjectMapper();
 
-        List<Question> questions = mapper.readValue(cleaned,
-                mapper.getTypeFactory().constructCollectionType(List.class, Question.class));
+        List<Icebreaker> icebreakers = mapper.readValue(cleaned,
+                mapper.getTypeFactory().constructCollectionType(List.class, Icebreaker.class));
 
         int added = 0;
-        for (Question q : questions) {
+        for (Icebreaker q : icebreakers) {
             String normalized = q.getText() == null ? "" : q.getText().trim();
             if (normalized.isBlank()) continue;
 
@@ -135,7 +135,7 @@ public class SlopService {
             }
 
             if (questionMap.putIfAbsent(key, q) == null) {
-                q.setCategories(List.of(QuestionCategory.ICEBREAKER));
+                q.setCategories(List.of(IcebreakerCategory.ICEBREAKER));
                 added++;
 
                 try {

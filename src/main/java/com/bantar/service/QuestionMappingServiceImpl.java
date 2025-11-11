@@ -1,6 +1,6 @@
 package com.bantar.service;
 
-import com.bantar.model.Question;
+import com.bantar.model.Icebreaker;
 import com.bantar.service.interfaces.QuestionMappingService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,13 +23,13 @@ public class QuestionMappingServiceImpl implements QuestionMappingService {
         this.jsonReaderUtil = jsonReaderUtil;
     }
 
-    public List<Question> getQuestionsFromJsonResource(String resource) {
+    public List<Icebreaker> getQuestionsFromJsonResource(String resource) {
         logger.info("Initializing QuestionMappingServiceImpl");
         JsonNode jsonNode = jsonReaderUtil.readJsonResource(resource);
         return mapJsonToQuestions(jsonNode);
     }
 
-    public List<Question> mapJsonToQuestions(JsonNode jsonNode) {
+    public List<Icebreaker> mapJsonToQuestions(JsonNode jsonNode) {
         if (jsonNode == null) {
             logger.warn("jsonNode is null");
             return null;
@@ -38,7 +38,7 @@ public class QuestionMappingServiceImpl implements QuestionMappingService {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readValue(jsonNode.toString(),
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, Question.class));
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, Icebreaker.class));
         } catch (IOException e) {
             logger.error("An error occurred in mapJsonToQuestions", e);
             return null;

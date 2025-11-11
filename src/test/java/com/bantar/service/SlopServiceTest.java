@@ -1,9 +1,9 @@
 package com.bantar.service;
 
-import com.bantar.entity.AiQuestionEntity;
-import com.bantar.model.Question;
 import com.bantar.dto.ResponseDTO;
-import com.bantar.model.QuestionCategory;
+import com.bantar.entity.AiQuestionEntity;
+import com.bantar.model.Icebreaker;
+import com.bantar.model.IcebreakerCategory;
 import com.bantar.repository.AiQuestionRepository;
 import com.google.genai.Client;
 import com.google.genai.Models;
@@ -16,11 +16,10 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class SlopServiceTest {
 
@@ -56,9 +55,9 @@ public class SlopServiceTest {
                 .thenReturn(response);
         slopService.generateQuestions(5);
 
-    ResponseDTO<QuestionCategory> result = slopService.getRandomQuestion();
-    assertNotNull(result);
-    assertEquals("Question 1", result.getText());
+        ResponseDTO<IcebreakerCategory> result = slopService.getRandomQuestion();
+        assertNotNull(result);
+        assertEquals("Question 1", result.getText());
 
         Mockito.verify(mockAiQuestionRepository, Mockito.atLeastOnce()).save(Mockito.argThat(entity ->
                 entity != null && entity.getText().equals("Question 1") && entity.getHash() != null
@@ -74,10 +73,10 @@ public class SlopServiceTest {
         // manually initialize because spring never calls it
         slopService.initialize();
 
-    ResponseDTO<QuestionCategory> q = slopService.getRandomQuestion();
+        ResponseDTO<IcebreakerCategory> q = slopService.getRandomQuestion();
 
-    assertNotNull(q);
-    assertEquals("Persisted Question", q.getText());
+        assertNotNull(q);
+        assertEquals("Persisted Question", q.getText());
     }
 
     @Test
@@ -89,9 +88,9 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(5);
 
-    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
-    assertNotNull(results);
-    assertTrue(results.isEmpty());
+        List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -104,9 +103,9 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(5);
 
-    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
-    assertNotNull(results);
-    assertTrue(results.isEmpty());
+        List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -116,9 +115,9 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(5);
 
-    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
-    assertNotNull(results);
-    assertTrue(results.isEmpty());
+        List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -131,16 +130,16 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(3);
 
-    ResponseDTO<QuestionCategory> result = slopService.getRandomQuestion();
-    assertNotNull(result);
-    assertTrue(result.getText().startsWith("Question"));
+        ResponseDTO<IcebreakerCategory> result = slopService.getRandomQuestion();
+        assertNotNull(result);
+        assertTrue(result.getText().startsWith("Question"));
     }
 
     @Test
     void testGetRandomQuestionWhenEmpty() {
-    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
-    assertNotNull(results);
-    assertTrue(results.isEmpty());
+        List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -153,37 +152,37 @@ public class SlopServiceTest {
 
         slopService.generateQuestions(1);
 
-    ResponseDTO<QuestionCategory> result = slopService.getRandomQuestion();
-    assertNotNull(result);
-    assertEquals("Sample Question", result.getText());
+        ResponseDTO<IcebreakerCategory> result = slopService.getRandomQuestion();
+        assertNotNull(result);
+        assertEquals("Sample Question", result.getText());
     }
 
     @Test
     void testGetAllQuestionsEmpty() {
-    List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
+        List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
 
-    assertNotNull(results);
-    assertTrue(results.isEmpty());
-    assertThrows(UnsupportedOperationException.class, () -> results.add(new ResponseDTO<>("x", 1, null)));
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
+        assertThrows(UnsupportedOperationException.class, () -> results.add(new ResponseDTO<>("x", 1, null)));
     }
 
     @Test
     void testGetAllQuestions() {
-        Question q1 = new Question("Hello world", 42L);
-        Question q2 = new Question("How are you?", 43L);
-        Question q3 = new Question("What's up?", 44L);
+        Icebreaker q1 = new Icebreaker("Hello world", 42L);
+        Icebreaker q2 = new Icebreaker("How are you?", 43L);
+        Icebreaker q3 = new Icebreaker("What's up?", 44L);
         slopService.questionMap.put("k1", q1);
         slopService.questionMap.put("k2", q2);
         slopService.questionMap.put("k3", q3);
 
-    List<ResponseDTO<QuestionCategory>> questions = slopService.getAllQuestions();
-    assertEquals(3, questions.size());
-    List<String> texts = questions.stream().map(ResponseDTO::getText).toList();
-    assertTrue(texts.contains("Hello world"));
-    assertTrue(texts.contains("How are you?"));
-    assertTrue(texts.contains("What's up?"));
+        List<ResponseDTO<IcebreakerCategory>> questions = slopService.getAllQuestions();
+        assertEquals(3, questions.size());
+        List<String> texts = questions.stream().map(ResponseDTO::getText).toList();
+        assertTrue(texts.contains("Hello world"));
+        assertTrue(texts.contains("How are you?"));
+        assertTrue(texts.contains("What's up?"));
 
-    slopService.questionMap.clear();
-    assertEquals(3, questions.size());
+        slopService.questionMap.clear();
+        assertEquals(3, questions.size());
     }
 }

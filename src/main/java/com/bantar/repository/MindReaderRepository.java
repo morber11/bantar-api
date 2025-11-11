@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface MindReaderRepository extends JpaRepository<MindReaderEntity, Integer> {
+public interface MindReaderRepository extends JpaRepository<MindReaderEntity, Long> {
 
     String GET_ALL_QUERY =
             "SELECT M.ID, M.TEXT " +

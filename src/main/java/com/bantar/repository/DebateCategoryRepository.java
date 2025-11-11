@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface DebateCategoryRepository extends JpaRepository<DebateCategoryEntity, Integer> {
+public interface DebateCategoryRepository extends JpaRepository<DebateCategoryEntity, Long> {
     List<DebateCategoryEntity> findByDebateIdIn(List<Long> debateIds);
 }

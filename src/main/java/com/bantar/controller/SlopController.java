@@ -1,7 +1,7 @@
 package com.bantar.controller;
 
 import com.bantar.dto.ResponseDTO;
-import com.bantar.model.QuestionCategory;
+import com.bantar.model.IcebreakerCategory;
 import com.bantar.service.SlopService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.util.List;
 
 @SuppressWarnings("unused")
@@ -23,8 +24,8 @@ public class SlopController {
     }
 
     @GetMapping("/getRandom")
-    public ResponseEntity<ResponseDTO<QuestionCategory>> getRandomQuestion() {
-        ResponseDTO<QuestionCategory> dto = slopService.getRandomQuestion();
+    public ResponseEntity<ResponseDTO<IcebreakerCategory>> getRandomQuestion() {
+        ResponseDTO<IcebreakerCategory> dto = slopService.getRandomQuestion();
 
         if (dto == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -34,8 +35,8 @@ public class SlopController {
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<ResponseDTO<QuestionCategory>>> getAllQuestions() {
-        List<ResponseDTO<QuestionCategory>> results = slopService.getAllQuestions();
+    public ResponseEntity<List<ResponseDTO<IcebreakerCategory>>> getAllQuestions() {
+        List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
 
         if (results == null || results.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);

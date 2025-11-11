@@ -4,7 +4,7 @@ import com.bantar.util.EnumUtils;
 
 import java.util.List;
 
-public enum QuestionCategory {
+public enum IcebreakerCategory {
     ICEBREAKER("Icebreakers"),
     CASUAL("Casual"),
     ROMANTIC("Romantic"),
@@ -27,7 +27,7 @@ public enum QuestionCategory {
 
     private final String displayName;
 
-    QuestionCategory(String displayName) {
+    IcebreakerCategory(String displayName) {
         this.displayName = displayName;
     }
 
@@ -36,11 +36,11 @@ public enum QuestionCategory {
         return displayName;
     }
 
-    public static QuestionCategory fromString(String category) {
-        return EnumUtils.fromStringIgnoreCase(QuestionCategory.class, category);
+    public static IcebreakerCategory fromString(String category) {
+        return EnumUtils.fromStringIgnoreCase(IcebreakerCategory.class, category);
     }
 
-    public static List<QuestionCategory> fromStrings(List<String> categories) {
-        return EnumUtils.fromStringsIgnoreCase(QuestionCategory.class, categories);
+    public static List<IcebreakerCategory> fromStrings(List<String> categories) {
+        return EnumUtils.fromStringsIgnoreCase(IcebreakerCategory.class, categories);
     }
 }
