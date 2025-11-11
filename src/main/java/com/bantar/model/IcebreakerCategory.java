@@ -5,7 +5,6 @@ import com.bantar.util.EnumUtils;
 import java.util.List;
 
 public enum IcebreakerCategory {
-    ICEBREAKER("Icebreakers"),
     CASUAL("Casual"),
     ROMANTIC("Romantic"),
     NSFW("Not Safe For Work/18+"),
