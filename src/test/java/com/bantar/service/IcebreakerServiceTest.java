@@ -43,7 +43,7 @@ class IcebreakerServiceTest {
 
     private List<IcebreakerEntity> createQuestionEntities() {
         IcebreakerCategoryEntity category = new IcebreakerCategoryEntity();
-        category.setCategory("ICEBREAKER");
+        category.setCategory("CASUAL");
         List<IcebreakerCategoryEntity> categories = Collections.singletonList(category);
 
         return Arrays.asList(
@@ -63,13 +63,11 @@ class IcebreakerServiceTest {
         IcebreakerEntity question3 = new IcebreakerEntity();
         question3.setId(3L);
 
-        return Arrays.asList(
-                new IcebreakerCategoryEntity(1L, "ICEBREAKER", question1),
-                new IcebreakerCategoryEntity(2L, "ICEBREAKER", question2),
-                new IcebreakerCategoryEntity(3L, "ICEBREAKER", question3),
-                new IcebreakerCategoryEntity(2L, "CASUAL", question2),
-                new IcebreakerCategoryEntity(3L, "SPORTS", question3)
-        );
+    return Arrays.asList(
+        new IcebreakerCategoryEntity(1L, "ROMANTIC", question1),
+        new IcebreakerCategoryEntity(2L, "CASUAL", question2),
+        new IcebreakerCategoryEntity(3L, "SPORTS", question3)
+    );
     }
 
     @Test
@@ -100,7 +98,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionByIdNotFound() {
         IcebreakerCategoryEntity category = new IcebreakerCategoryEntity();
-        category.setCategory("ICEBREAKER");
+        category.setCategory("CASUAL");
         List<IcebreakerCategoryEntity> categories = Collections.singletonList(category);
 
         List<IcebreakerEntity> questions = List.of(new IcebreakerEntity(1, "What is your favorite color?", categories));
@@ -184,15 +182,15 @@ class IcebreakerServiceTest {
 
         when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
         when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-        List<ResponseDTO<?>> result = questionService.getByCategory("ICEBREAKER");
+        List<ResponseDTO<?>> result = questionService.getByCategory("CASUAL");
 
-        assertNotNull(result);
-        assertEquals(questions.size(), result.size());
+    assertNotNull(result);
+    assertEquals(1, result.size());
 
         result.forEach(dto -> {
             @SuppressWarnings("unchecked") // skip checking the cast
             List<IcebreakerCategory> resultCategories = (List<IcebreakerCategory>) dto.getCategories();
-            assertTrue(resultCategories.contains(IcebreakerCategory.ICEBREAKER));
+            assertTrue(resultCategories.contains(IcebreakerCategory.CASUAL));
         });
     }
 
@@ -205,7 +203,6 @@ class IcebreakerServiceTest {
 
     @Test
     void testGetQuestionsByValidCategories() {
-        List<String> categories = List.of("ICEBREAKER", "CASUAL");
 
         List<IcebreakerEntity> questions = createQuestionEntities();
         List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
@@ -213,17 +210,16 @@ class IcebreakerServiceTest {
         when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
         when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
 
-        List<ResponseDTO<?>> result = questionService.getByFilteredCategories(categories);
+        List<ResponseDTO<?>> result = questionService.getByFilteredCategories(List.of("CASUAL"));
 
         assertNotNull(result);
         assertEquals(1, result.size());
 
         @SuppressWarnings("unchecked")
         List<IcebreakerCategory> resultCategories = (List<IcebreakerCategory>) result.get(0).getCategories();
-        boolean hasIcebreaker = resultCategories.contains(IcebreakerCategory.ICEBREAKER);
         boolean hasCasual = resultCategories.contains(IcebreakerCategory.CASUAL);
 
-        assertTrue(hasIcebreaker && hasCasual, "Question should have both ICEBREAKER and CASUAL categories");
+        assertTrue(hasCasual, "Question should have CASUAL category");
     }
 
     @Test

@@ -57,7 +57,7 @@ public class SlopService {
             aiQuestionRepository.findAll().forEach(entity -> {
                 ResponseDTO<IcebreakerCategory> dto = IcebreakerMapper.toGenericModel(new IcebreakerEntity(entity.getId(), entity.getText(), null));
                 Icebreaker q = new Icebreaker(dto.getText(), dto.getId());
-                q.setCategories(List.of(IcebreakerCategory.ICEBREAKER));
+                q.setCategories(List.of(IcebreakerCategory.CASUAL));
                 try {
                     String key = sha256(entity.getText().trim().toLowerCase());
                     questionMap.putIfAbsent(key, q);
@@ -135,7 +135,7 @@ public class SlopService {
             }
 
             if (questionMap.putIfAbsent(key, q) == null) {
-                q.setCategories(List.of(IcebreakerCategory.ICEBREAKER));
+                q.setCategories(List.of(IcebreakerCategory.CASUAL));
                 added++;
 
                 try {
