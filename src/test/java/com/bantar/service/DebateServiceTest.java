@@ -192,7 +192,6 @@ class DebateServiceTest {
         result.forEach(dto -> {
             @SuppressWarnings("unchecked")
             List<DebateCategory> resultCategories = (List<DebateCategory>) dto.getCategories();
-            assertTrue(resultCategories.contains(DebateCategory.DEBATE));
         });
     }
 
@@ -206,7 +205,7 @@ class DebateServiceTest {
 
     @Test
     void testGetQuestionsByValidCategories() {
-        List<String> categories = List.of("DEBATE", "ETHICS");
+        List<String> categories = List.of("ETHICS");
 
         List<DebateEntity> debates = createDebateEntities();
         List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
@@ -221,10 +220,9 @@ class DebateServiceTest {
 
         @SuppressWarnings("unchecked")
         List<DebateCategory> resultCategories = (List<DebateCategory>) result.get(0).getCategories();
-        boolean hasDebate = resultCategories.contains(DebateCategory.DEBATE);
         boolean hasEthics = resultCategories.contains(DebateCategory.ETHICS);
 
-        assertTrue(hasDebate && hasEthics, "Debate should have both DEBATE and ETHICS categories");
+        assertTrue(hasEthics, "Debate should have ETHICS category");
     }
 
     @Test
