@@ -28,10 +28,10 @@ Place a `.env` file at the project root or set environment variables directly. `
 
 **Common variables** (defaults shown):
 
-- `SPRING_PROFILES_ACTIVE` — profile (e.g., `local`, `prod`)
-- `SPRING_DATASOURCE_URL` — JDBC URL (default: `jdbc:h2:file:./data/bantar`)
-- `SPRING_DATASOURCE_USERNAME` — DB user (default: `sa`)
-- `SPRING_DATASOURCE_PASSWORD` — DB password (default: `password`)
+- `SPRING_PROFILES_ACTIVE` - profile (e.g., `local`, `prod`)
+- `SPRING_DATASOURCE_URL` - JDBC URL (default: `jdbc:h2:file:./data/bantar`)
+- `SPRING_DATASOURCE_USERNAME` - DB user (default: `sa`)
+- `SPRING_DATASOURCE_PASSWORD` - DB password (default: `password`)
 
 ### Examples
 
