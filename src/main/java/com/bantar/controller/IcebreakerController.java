@@ -6,6 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -16,6 +20,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/icebreakers")
 public class IcebreakerController {
+
+    private static final Logger logger = LoggerFactory.getLogger(IcebreakerController.class);
 
     private final IcebreakerService questionService;
 
@@ -31,14 +37,20 @@ public class IcebreakerController {
      * @return 200 with question when found, 404 when not found
      */
     @GetMapping("/get/{id}")
-    public ResponseEntity<ResponseDTO<?>> getQuestionById(@PathVariable int id) {
+    public ResponseEntity<ResponseDTO<?>> getQuestionById(@PathVariable int id, HttpServletRequest request, HttpServletResponse response) {
         ResponseDTO<?> result = questionService.getById(id);
+        ResponseEntity<ResponseDTO<?>> resp;
 
         if (result == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            resp = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else {
+            resp = new ResponseEntity<>(result, HttpStatus.OK);
         }
 
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        logger.info("Request URL: {} Method: {} Status: {}",
+                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
+
+        return resp;
     }
 
     /**
@@ -52,14 +64,21 @@ public class IcebreakerController {
     public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByRange(
             @RequestParam(defaultValue = "0") int startId,
             @RequestParam(defaultValue = "100") int limit
+            , HttpServletRequest request, HttpServletResponse response
     ) {
         List<ResponseDTO<?>> result = questionService.getByRange(startId, limit);
+        ResponseEntity<List<ResponseDTO<?>>> resp;
 
         if (result == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            resp = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else {
+            resp = new ResponseEntity<>(result, HttpStatus.OK);
         }
 
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        logger.info("Request URL: {} Method: {} Status: {}",
+                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
+
+        return resp;
     }
 
     /**
@@ -68,14 +87,20 @@ public class IcebreakerController {
      * @return 200 with list when available, 404 if not
      */
     @GetMapping("/getAll")
-    public ResponseEntity<List<ResponseDTO<?>>> getAllQuestions() {
+    public ResponseEntity<List<ResponseDTO<?>>> getAllQuestions(HttpServletRequest request, HttpServletResponse response) {
         List<ResponseDTO<?>> result = questionService.getAll();
+        ResponseEntity<List<ResponseDTO<?>>> resp;
 
         if (result == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            resp = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else {
+            resp = new ResponseEntity<>(result, HttpStatus.OK);
         }
 
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        logger.info("Request URL: {} Method: {} Status: {}",
+                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
+
+        return resp;
     }
 
     /**
@@ -85,16 +110,20 @@ public class IcebreakerController {
      * @return 200 with list when valid, 400 when category is invalid
      */
     @GetMapping("/getByCategory")
-    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategory(@RequestParam String category) {
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategory(@RequestParam String category, HttpServletRequest request, HttpServletResponse response) {
         List<ResponseDTO<?>> result = questionService.getByCategory(category);
+        ResponseEntity<List<ResponseDTO<?>>> resp;
 
         if (result == null || result.isEmpty()) {
-            return ResponseEntity
-                    .badRequest()
-                    .build();
+            resp = ResponseEntity.badRequest().build();
+        } else {
+            resp = ResponseEntity.ok(result);
         }
 
-        return ResponseEntity.ok(result);
+        logger.info("Request URL: {} Method: {} Status: {}",
+                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
+
+        return resp;
     }
 
     /**
@@ -104,16 +133,20 @@ public class IcebreakerController {
      * @return 200 with list when at least one valid category, 400 when none
      */
     @GetMapping("/getByCategories")
-    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategories(@RequestParam List<String> categories) {
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategories(@RequestParam List<String> categories, HttpServletRequest request, HttpServletResponse response) {
         List<ResponseDTO<?>> result = questionService.getByCategories(categories);
+        ResponseEntity<List<ResponseDTO<?>>> resp;
 
         if (result == null || result.isEmpty()) {
-            return ResponseEntity
-                    .badRequest()
-                    .build();
+            resp = ResponseEntity.badRequest().build();
+        } else {
+            resp = ResponseEntity.ok(result);
         }
 
-        return ResponseEntity.ok(result);
+        logger.info("Request URL: {} Method: {} Status: {}",
+                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
+
+        return resp;
     }
 
     /**
@@ -123,16 +156,20 @@ public class IcebreakerController {
      * @return 200 with list when at least one question matches all categories, 400 when none
      */
     @GetMapping("/getByFilteredCategories")
-    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByFilteredCategories(@RequestParam List<String> categories) {
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByFilteredCategories(@RequestParam List<String> categories, HttpServletRequest request, HttpServletResponse response) {
         List<ResponseDTO<?>> result = questionService.getByFilteredCategories(categories);
+        ResponseEntity<List<ResponseDTO<?>>> resp;
 
         if (result == null || result.isEmpty()) {
-            return ResponseEntity
-                    .badRequest()
-                    .build();
+            resp = ResponseEntity.badRequest().build();
+        } else {
+            resp = ResponseEntity.ok(result);
         }
 
-        return ResponseEntity.ok(result);
+        logger.info("Request URL: {} Method: {} Status: {}",
+                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
+
+        return resp;
     }
 
     /**
@@ -142,8 +179,13 @@ public class IcebreakerController {
      * @return 200 on success
      */
     @PostMapping("/refresh")
-    public ResponseEntity<Void> refreshQuestions() {
+    public ResponseEntity<Void> refreshQuestions(HttpServletRequest request, HttpServletResponse response) {
         questionService.refresh();
-        return new ResponseEntity<>(HttpStatus.OK);
+        ResponseEntity<Void> resp = new ResponseEntity<>(HttpStatus.OK);
+
+        logger.info("Request URL: {} Method: {} Status: {}",
+                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
+
+        return resp;
     }
 }
