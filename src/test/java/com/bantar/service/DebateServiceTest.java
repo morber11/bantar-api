@@ -42,7 +42,7 @@ class DebateServiceTest {
 
     private List<DebateEntity> createDebateEntities() {
         DebateCategoryEntity category = new DebateCategoryEntity();
-        category.setCategory("DEBATE");
+        category.setCategory("CASUAL");
         List<DebateCategoryEntity> categories = Collections.singletonList(category);
 
         return Arrays.asList(
@@ -63,9 +63,9 @@ class DebateServiceTest {
         d3.setId(3L);
 
         return Arrays.asList(
-                new DebateCategoryEntity(1L, "DEBATE", d1),
-                new DebateCategoryEntity(2L, "DEBATE", d2),
-                new DebateCategoryEntity(3L, "DEBATE", d3),
+                new DebateCategoryEntity(1L, "CASUAL", d1),
+                new DebateCategoryEntity(2L, "CASUAL", d2),
+                new DebateCategoryEntity(3L, "CASUAL", d3),
                 new DebateCategoryEntity(2L, "ETHICS", d2),
                 new DebateCategoryEntity(3L, "EDUCATION", d3)
         );
@@ -99,7 +99,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionByIdNotFound() {
         DebateCategoryEntity category = new DebateCategoryEntity();
-        category.setCategory("DEBATE");
+        category.setCategory("CASUAL");
         List<DebateCategoryEntity> categories = Collections.singletonList(category);
 
         List<DebateEntity> debates = List.of(new DebateEntity(1, "Should we colonize Mars?", categories));
@@ -184,7 +184,7 @@ class DebateServiceTest {
         when(debateRepository.findAll()).thenReturn(debates);
         when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
 
-        List<ResponseDTO<?>> result = debateService.getByCategory("DEBATE");
+        List<ResponseDTO<?>> result = debateService.getByCategory(DebateCategory.CASUAL.name());
 
         assertNotNull(result);
         assertEquals(debates.size(), result.size());
@@ -192,6 +192,7 @@ class DebateServiceTest {
         result.forEach(dto -> {
             @SuppressWarnings("unchecked")
             List<DebateCategory> resultCategories = (List<DebateCategory>) dto.getCategories();
+            assertTrue(resultCategories.contains(DebateCategory.CASUAL));
         });
     }
 
