@@ -2,7 +2,7 @@
 
 Backend for Bantar
 
-Frontend: [morber11/bantar-api](https://github.com/morber11/bantar-web)
+Frontend: [morber11/bantar-web](https://github.com/morber11/bantar-web)
 
 ## Requirements
 
