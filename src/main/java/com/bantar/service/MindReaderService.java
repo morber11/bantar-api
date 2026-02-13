@@ -4,6 +4,8 @@ import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.MindReaderEntity;
 import com.bantar.model.MindReaderCategory;
 import com.bantar.repository.MindReaderRepository;
+import com.bantar.repository.MindReaderCategoryRepository;
+import com.bantar.entity.MindReaderCategoryEntity;
 import com.bantar.service.interfaces.QuestionService;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
@@ -11,10 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,11 +22,14 @@ public class MindReaderService implements QuestionService {
     private static final Logger logger = LogManager.getLogger(MindReaderService.class);
 
     private final MindReaderRepository mindReaderRepository;
-    private volatile List<ResponseDTO<MindReaderCategory>> cachedItems;
+    private final MindReaderCategoryRepository mindReaderCategoryRepository;
+    private volatile List<ResponseDTO<MindReaderCategory>> cachedQuestions;
 
     @Autowired
-    public MindReaderService(MindReaderRepository mindReaderRepository) {
+    public MindReaderService(MindReaderRepository mindReaderRepository, MindReaderCategoryRepository mindReaderCategoryRepository) {
+        logger.info("Initializing MindReaderService");
         this.mindReaderRepository = mindReaderRepository;
+        this.mindReaderCategoryRepository = mindReaderCategoryRepository;
     }
 
     @SuppressWarnings("unused")
@@ -43,18 +45,13 @@ public class MindReaderService implements QuestionService {
     @Override
     public ResponseDTO<?> getById(int id) {
         ensureQuestionsLoaded();
-        return cachedItems.stream()
-                .filter(q -> q.getId() == id)
-                .findFirst()
-                .orElse(null);
+        return findQuestionById(id);
     }
 
     @Override
     public List<ResponseDTO<?>> getByRange(int startId, int limit) {
         ensureQuestionsLoaded();
-        return cachedItems.stream()
-                .skip(startId)
-                .limit(limit)
+        return findQuestionsByRange(startId, limit).stream()
                 .map(q -> (ResponseDTO<?>) q)
                 .collect(Collectors.toList());
     }
@@ -62,7 +59,7 @@ public class MindReaderService implements QuestionService {
     @Override
     public List<ResponseDTO<?>> getAll() {
         ensureQuestionsLoaded();
-        return cachedItems.stream()
+        return findQuestionsByRange(0, cachedQuestions.size()).stream()
                 .map(q -> (ResponseDTO<?>) q)
                 .collect(Collectors.toList());
     }
@@ -81,9 +78,7 @@ public class MindReaderService implements QuestionService {
         }
 
         ensureQuestionsLoaded();
-
-        return cachedItems.stream()
-                .filter(q -> q.getCategories() != null && q.getCategories().contains(questionCategory))
+        return findQuestionsByCategory(questionCategory).stream()
                 .map(q -> (ResponseDTO<?>) q)
                 .collect(Collectors.toList());
     }
@@ -96,10 +91,7 @@ public class MindReaderService implements QuestionService {
         }
 
         ensureQuestionsLoaded();
-
-        Set<MindReaderCategory> categorySet = new HashSet<>(validCategories);
-        return cachedItems.stream()
-                .filter(q -> q.getCategories() != null && !Collections.disjoint(q.getCategories(), categorySet))
+        return findQuestionsByCategories(validCategories).stream()
                 .map(q -> (ResponseDTO<?>) q)
                 .collect(Collectors.toList());
     }
@@ -112,10 +104,7 @@ public class MindReaderService implements QuestionService {
         }
 
         ensureQuestionsLoaded();
-
-        Set<MindReaderCategory> categorySet = new HashSet<>(validCategories);
-        return cachedItems.stream()
-                .filter(q -> q.getCategories() != null && new HashSet<>(q.getCategories()).containsAll(categorySet))
+        return findQuestionsByFilteredCategories(validCategories).stream()
                 .map(q -> (ResponseDTO<?>) q)
                 .collect(Collectors.toList());
     }
@@ -125,34 +114,72 @@ public class MindReaderService implements QuestionService {
         loadQuestions();
     }
 
+    private synchronized void loadQuestions() {
+        List<MindReaderEntity> items = mindReaderRepository.getAll();
+
+        List<Long> ids = items.stream()
+                .map(MindReaderEntity::getId)
+                .collect(Collectors.toList());
+
+        List<MindReaderCategoryEntity> categoryEntities = ids.isEmpty()
+                ? Collections.emptyList()
+                : mindReaderCategoryRepository.findByMindReaderIdIn(ids);
+
+        Map<Long, List<MindReaderCategory>> categoryMap = categoryEntities.stream()
+                .collect(Collectors.groupingBy(ent -> ent.getMindReader().getId(),
+                        Collectors.mapping(ent -> MindReaderCategory.valueOf(ent.getCategoryCode()),
+                                Collectors.toList())));
+
+        cachedQuestions = items.stream()
+                .map(entity -> new ResponseDTO<>(entity.getText(), entity.getId(),
+                        categoryMap.getOrDefault(entity.getId(), Collections.emptyList())))
+                .collect(Collectors.toList());
+    }
+
     private void ensureQuestionsLoaded() {
-        if (cachedItems == null || cachedItems.isEmpty()) {
+        if (cachedQuestions == null || cachedQuestions.isEmpty()) {
             synchronized (this) {
-                if (cachedItems == null || cachedItems.isEmpty()) {
+                if (cachedQuestions == null || cachedQuestions.isEmpty()) {
                     loadQuestions();
                 }
             }
         }
     }
 
-    private synchronized void loadQuestions() {
-        List<MindReaderEntity> items = mindReaderRepository.getAll();
+    private ResponseDTO<MindReaderCategory> findQuestionById(int id) {
+        return cachedQuestions.stream()
+                .filter(q -> q.getId() == id)
+                .findFirst()
+                .orElse(null);
+    }
 
-        // Build category mapping from the categories present on each MindReaderEntity
-        java.util.Map<Long, List<MindReaderCategory>> categoryMap = items.stream()
-                .collect(Collectors.toMap(
-                        MindReaderEntity::getId,
-                        e -> {
-                            if (e.getCategories() == null) return Collections.emptyList();
-                            return e.getCategories().stream()
-                                    .map(cat -> MindReaderCategory.valueOf(cat.getCategoryCode()))
-                                    .collect(Collectors.toList());
-                        }
-                ));
+    private List<ResponseDTO<MindReaderCategory>> findQuestionsByRange(int startId, int limit) {
+        return cachedQuestions.stream()
+                .skip(startId)
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
 
-        cachedItems = items.stream()
-                .map(entity -> new ResponseDTO<>(entity.getText(), entity.getId(),
-                        categoryMap.getOrDefault(entity.getId(), Collections.emptyList())))
+    private List<ResponseDTO<MindReaderCategory>> findQuestionsByCategory(MindReaderCategory category) {
+        return cachedQuestions.stream()
+                .filter(d -> d.getCategories() != null && d.getCategories().contains(category))
+                .collect(Collectors.toList());
+    }
+
+    private List<ResponseDTO<MindReaderCategory>> findQuestionsByCategories(
+            List<MindReaderCategory> requiredCategories) {
+        Set<MindReaderCategory> requiredCategorySet = new HashSet<>(requiredCategories);
+        return cachedQuestions.stream()
+                .filter(d -> d.getCategories() != null
+                        && !Collections.disjoint(new HashSet<>(d.getCategories()), requiredCategorySet))
+                .collect(Collectors.toList());
+    }
+
+    private List<ResponseDTO<MindReaderCategory>> findQuestionsByFilteredCategories(
+            List<MindReaderCategory> requiredCategories) {
+        return cachedQuestions.stream()
+                .filter(d -> d.getCategories() != null
+                        && new HashSet<>(d.getCategories()).containsAll(requiredCategories))
                 .collect(Collectors.toList());
     }
 }

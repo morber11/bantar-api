@@ -124,7 +124,9 @@ public class DebateService implements QuestionService {
                 .map(DebateEntity::getId)
                 .collect(Collectors.toList());
 
-        List<DebateCategoryEntity> debateCategoryEntities = debateCategoryRepository.findByDebateIdIn(debateIds);
+        List<DebateCategoryEntity> debateCategoryEntities = debateIds.isEmpty()
+                ? Collections.emptyList()
+                : debateCategoryRepository.findByDebateIdIn(debateIds);
 
         Map<Long, List<DebateCategory>> debateCategoriesMap = debateCategoryEntities.stream()
                 .collect(Collectors.groupingBy(categoryEntity -> categoryEntity.getDebate().getId(),
