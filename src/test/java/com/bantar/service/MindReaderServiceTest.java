@@ -4,7 +4,9 @@ import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.MindReaderCategoryEntity;
 import com.bantar.entity.MindReaderEntity;
 import com.bantar.repository.MindReaderRepository;
+import com.bantar.repository.MindReaderCategoryRepository;
 import com.bantar.service.interfaces.QuestionService;
+import java.util.ArrayList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,12 +24,24 @@ class MindReaderServiceTest {
     @Mock
     private MindReaderRepository mindReaderRepository;
     @Mock
+    private MindReaderCategoryRepository mindReaderCategoryRepository;
+    @Mock
     private AutoCloseable closeable;
 
     @BeforeEach
     void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
-        mindReaderService = new MindReaderService(mindReaderRepository);
+        mindReaderService = new MindReaderService(mindReaderRepository, mindReaderCategoryRepository);
+
+        when(mindReaderCategoryRepository.findByMindReaderIdIn(org.mockito.ArgumentMatchers.anyList()))
+                .thenAnswer(invocation -> {
+                    List<MindReaderEntity> ents = createEntities();
+                    List<MindReaderCategoryEntity> cats = new ArrayList<>();
+                    for (MindReaderEntity e : ents) {
+                        if (e.getCategories() != null) cats.addAll(e.getCategories());
+                    }
+                    return cats;
+                });
     }
 
     @AfterEach
