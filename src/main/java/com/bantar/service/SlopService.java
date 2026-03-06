@@ -9,8 +9,8 @@ import com.bantar.model.IcebreakerCategory;
 import com.bantar.repository.AiQuestionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.genai.Client;
-import com.google.genai.types.GenerateContentResponse;
+import com.bantar.slop.SlopProvider; // abstraction for AI calls
+
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.PersistenceException;
 import org.apache.logging.log4j.LogManager;
@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static com.bantar.config.Constants.GEMINI_MODEL;
 import static com.bantar.config.Constants.ICEBREAKERS_LLM_PROMPT;
 
 @Service
@@ -36,8 +35,9 @@ public class SlopService {
 
     private static final Logger logger = LogManager.getLogger(SlopService.class);
     Map<String, Icebreaker> questionMap = new ConcurrentHashMap<>();
-    private final Client aiClient;
-    private final AiQuestionRepository aiQuestionRepository;
+    private final SlopProvider slopProvider;
+    private final AiQuestionRepository aiQuestionRepository; // persists generated questions
+
 
     private static final int INITIAL_QUESTION_COUNT = 30;
     private static final int TARGET_QUESTION_COUNT = 100;
@@ -45,8 +45,8 @@ public class SlopService {
     private static final int MAX_BATCH_ATTEMPTS = 10;
 
     @Autowired
-    public SlopService(Client aiClient, AiQuestionRepository aiQuestionRepository) {
-        this.aiClient = aiClient;
+    public SlopService(SlopProvider slopProvider, AiQuestionRepository aiQuestionRepository) {
+        this.slopProvider = slopProvider;
         this.aiQuestionRepository = aiQuestionRepository;
     }
 
@@ -83,14 +83,11 @@ public class SlopService {
         String prompt = String.format(ICEBREAKERS_LLM_PROMPT, count);
 
         try {
-            GenerateContentResponse response =
-                    aiClient.models.generateContent(GEMINI_MODEL, prompt, null);
-
-            if (response == null || response.text() == null) {
-                throw new Exception("Empty response from AI Client");
+            String aiText = slopProvider.generate(prompt);
+            if (aiText == null) {
+                throw new Exception("Empty response from AI provider");
             }
-
-            parseAndStoreQuestions(response.text());
+            parseAndStoreQuestions(aiText);
         } catch (Exception e) {
             logger.error("An error occurred while trying to generateQuestions", e);
         }
