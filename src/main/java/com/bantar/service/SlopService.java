@@ -9,7 +9,7 @@ import com.bantar.model.IcebreakerCategory;
 import com.bantar.repository.AiQuestionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.bantar.slop.SlopProvider; // abstraction for AI calls
+import com.bantar.slop.SlopProvider; 
 
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.PersistenceException;
@@ -35,8 +35,8 @@ public class SlopService {
 
     private static final Logger logger = LogManager.getLogger(SlopService.class);
     Map<String, Icebreaker> questionMap = new ConcurrentHashMap<>();
-    private final SlopProvider slopProvider;
-    private final AiQuestionRepository aiQuestionRepository; // persists generated questions
+    private final SlopProvider aiProvider;
+    private final AiQuestionRepository aiQuestionRepository; 
 
 
     private static final int INITIAL_QUESTION_COUNT = 30;
@@ -45,14 +45,15 @@ public class SlopService {
     private static final int MAX_BATCH_ATTEMPTS = 10;
 
     @Autowired
-    public SlopService(SlopProvider slopProvider, AiQuestionRepository aiQuestionRepository) {
-        this.slopProvider = slopProvider;
+    public SlopService(SlopProvider aiProvider, AiQuestionRepository aiQuestionRepository) {
+        this.aiProvider = aiProvider;
         this.aiQuestionRepository = aiQuestionRepository;
     }
 
     @SuppressWarnings("unused")
     @PostConstruct
     public void initialize() {
+        logger.info("SlopService initialized using provider {}", aiProvider.getClass().getName());
         try {
             aiQuestionRepository.findAll().forEach(entity -> {
                 ResponseDTO<IcebreakerCategory> dto = IcebreakerMapper.toGenericModel(new IcebreakerEntity(entity.getId(), entity.getText(), null));
@@ -83,7 +84,7 @@ public class SlopService {
         String prompt = String.format(ICEBREAKERS_LLM_PROMPT, count);
 
         try {
-            String aiText = slopProvider.generate(prompt);
+            String aiText = aiProvider.generate(prompt);
             if (aiText == null) {
                 throw new Exception("Empty response from AI provider");
             }
