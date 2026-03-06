@@ -5,16 +5,14 @@ import com.bantar.entity.AiQuestionEntity;
 import com.bantar.model.Icebreaker;
 import com.bantar.model.IcebreakerCategory;
 import com.bantar.repository.AiQuestionRepository;
-import com.google.genai.Client;
-import com.google.genai.Models;
-import com.google.genai.types.GenerateContentResponse;
+import com.bantar.slop.SlopProvider; // use provider abstraction
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
@@ -28,7 +26,7 @@ public class SlopServiceTest {
     private AutoCloseable closeable;
 
     @Mock
-    private Models mockModels;
+    private SlopProvider mockSlopProvider;
 
     @Mock
     private AiQuestionRepository mockAiQuestionRepository;
@@ -36,9 +34,7 @@ public class SlopServiceTest {
     @BeforeEach
     void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
-        Client mockAiClient = new Client();
-        ReflectionTestUtils.setField(mockAiClient, "models", mockModels); // janky reflection because it is a final field
-        slopService = new SlopService(mockAiClient, mockAiQuestionRepository);
+        slopService = new SlopService(mockSlopProvider, mockAiQuestionRepository);
     }
 
     @AfterEach
@@ -47,12 +43,9 @@ public class SlopServiceTest {
     }
 
     @Test
-    void testGenerateQuestions() {
+    void testGenerateQuestions() throws Exception {
         String mockResponse = "[{\"text\": \"Question 1\"}]";
-        GenerateContentResponse response = Mockito.mock(GenerateContentResponse.class);
-        when(response.text()).thenReturn(mockResponse);
-        when(mockModels.generateContent(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
-                .thenReturn(response);
+        when(mockSlopProvider.generate(Mockito.anyString())).thenReturn(mockResponse);
         slopService.generateQuestions(5);
 
     ResponseDTO<IcebreakerCategory> result = slopService.getRandomQuestion();
@@ -80,12 +73,8 @@ public class SlopServiceTest {
     }
 
     @Test
-    void testGenerateQuestionsWithEmptyResponse() {
-        GenerateContentResponse response = Mockito.mock(GenerateContentResponse.class);
-        when(response.text()).thenReturn(null);
-        when(mockModels.generateContent(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
-                .thenReturn(response);
-
+    void testGenerateQuestionsWithEmptyResponse() throws Exception {
+        when(mockSlopProvider.generate(Mockito.anyString())).thenReturn(null);
         slopService.generateQuestions(5);
 
     List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
@@ -94,12 +83,19 @@ public class SlopServiceTest {
     }
 
     @Test
-    void testGenerateQuestionsWithInvalidJson() {
+    void testGenerateQuestionsWithInvalidJson() throws Exception {
         String mockResponse = "invalid json";
-        GenerateContentResponse response = Mockito.mock(GenerateContentResponse.class);
-        when(response.text()).thenReturn(mockResponse);
-        when(mockModels.generateContent(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
-                .thenReturn(response);
+        when(mockSlopProvider.generate(Mockito.anyString())).thenReturn(mockResponse);
+        slopService.generateQuestions(5);
+
+    List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    void testGenerateQuestionsWithNullResponse() throws Exception {
+        when(mockSlopProvider.generate(Mockito.anyString())).thenReturn(null);
 
         slopService.generateQuestions(5);
 
@@ -109,25 +105,9 @@ public class SlopServiceTest {
     }
 
     @Test
-    void testGenerateQuestionsWithNullResponse() {
-        when(mockModels.generateContent(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
-                .thenReturn(null);
-
-        slopService.generateQuestions(5);
-
-    List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
-        assertNotNull(results);
-        assertTrue(results.isEmpty());
-    }
-
-    @Test
-    void testGenerateQuestionsMultiple() {
+    void testGenerateQuestionsMultiple() throws Exception {
         String mockResponse = "[{\"text\": \"Question 1\"}, {\"text\": \"Question 2\"}, {\"text\": \"Question 3\"}]";
-        GenerateContentResponse response = Mockito.mock(GenerateContentResponse.class);
-        when(response.text()).thenReturn(mockResponse);
-        when(mockModels.generateContent(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
-                .thenReturn(response);
-
+        when(mockSlopProvider.generate(Mockito.anyString())).thenReturn(mockResponse);
         slopService.generateQuestions(3);
 
     ResponseDTO<IcebreakerCategory> result = slopService.getRandomQuestion();
@@ -143,13 +123,9 @@ public class SlopServiceTest {
     }
 
     @Test
-    void testGetRandomQuestionReturnsFromMap() {
+    void testGetRandomQuestionReturnsFromMap() throws Exception {
         String mockResponse = "[{\"text\": \"Sample Question\"}]";
-        GenerateContentResponse response = Mockito.mock(GenerateContentResponse.class);
-        when(response.text()).thenReturn(mockResponse);
-        when(mockModels.generateContent(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
-                .thenReturn(response);
-
+        when(mockSlopProvider.generate(Mockito.anyString())).thenReturn(mockResponse);
         slopService.generateQuestions(1);
 
     ResponseDTO<IcebreakerCategory> result = slopService.getRandomQuestion();
