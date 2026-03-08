@@ -29,6 +29,9 @@ public class GeminiProviderTest {
         Client realClient = new Client();
         ReflectionTestUtils.setField(realClient, "models", mockModels);
         provider = new GeminiProvider(realClient);
+        // shorten delays and keep three retries to make tests fast
+        provider.setMaxRetries(3);
+        provider.setRetryDelaysMs(new long[]{1, 1, 1});
     }
 
     @Test
@@ -59,6 +62,39 @@ public class GeminiProviderTest {
 
         Exception ex = assertThrows(Exception.class, () -> provider.generate("y"));
         assertTrue(ex.getMessage().contains("Empty response"));
+    }
+
+    @Test
+    void generateRetriesOnFailureThenSucceeds() throws Exception {
+        String prompt = "retry";
+        String responseText = "eventual text";
+
+        GenerateContentResponse mockResponse = Mockito.mock(GenerateContentResponse.class);
+        when(mockResponse.text()).thenReturn(responseText);
+
+        // first two calls throw, third returns response
+        when(mockModels.generateContent(GEMINI_MODEL, prompt, null))
+                .thenThrow(new RuntimeException("fail1"))
+                .thenThrow(new RuntimeException("fail2"))
+                .thenReturn(mockResponse);
+
+        String actual = provider.generate(prompt);
+        assertEquals(responseText, actual);
+        // verify that the method was invoked three times (2 failures + success)
+        Mockito.verify(mockModels, Mockito.times(3)).generateContent(GEMINI_MODEL, prompt, null);
+    }
+
+    @Test
+    void generateThrowsAfterMaxRetries() {
+        String prompt = "alwaysFail";
+        when(mockModels.generateContent(GEMINI_MODEL, prompt, null))
+                .thenThrow(new RuntimeException("permanent failure"));
+
+        Exception ex = assertThrows(Exception.class, () -> provider.generate(prompt));
+        // we expect at least the message from the thrown exception
+        assertTrue(ex.getMessage().contains("permanent failure"));
+        Mockito.verify(mockModels, Mockito.times(provider.maxRetries))
+                .generateContent(GEMINI_MODEL, prompt, null);
     }
 
     @org.junit.jupiter.api.AfterEach
