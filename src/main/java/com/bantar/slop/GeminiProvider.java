@@ -16,8 +16,7 @@ public class GeminiProvider implements SlopProvider {
 
     private static final Logger logger = LogManager.getLogger(GeminiProvider.class);
     private final Client aiClient;
-
-    // tests may override via setters
+    
     int maxRetries = 3;
     long[] retryDelaysMs = {5000, 10000, 20000};
 
@@ -27,6 +26,7 @@ public class GeminiProvider implements SlopProvider {
         logger.info("GeminiProvider constructed with client {}", aiClient);
     }
 
+    // for tests or future configuration
     public void setMaxRetries(int maxRetries) {
         this.maxRetries = maxRetries;
     }
@@ -44,7 +44,6 @@ public class GeminiProvider implements SlopProvider {
         logger.info("GeminiProvider bean initialized");
     }
 
-    @SuppressWarnings("BusyWait")
     @Override
     public String generate(String prompt) throws Exception {
         Exception lastException = null;
@@ -71,11 +70,6 @@ public class GeminiProvider implements SlopProvider {
             }
         }
 
-        // messy - find an alternative
-        if (lastException != null) {
-            throw lastException;
-        }
-
-        return "";
+        throw lastException;
     }
 }
