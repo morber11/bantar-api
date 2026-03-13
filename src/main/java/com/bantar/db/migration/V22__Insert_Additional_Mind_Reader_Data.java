@@ -27,7 +27,7 @@ public class V22__Insert_Additional_Mind_Reader_Data extends BaseJavaMigration {
                 "('Would I rather go to a big party or a small gathering?')",
                 "('If I start a hobby, am I likely to stick with it or move on quickly?')",
                 "('Would I rather learn a musical instrument or a new language?')",
-                "('If I\'m on holiday, do I prefer relaxing or exploring all day?')",
+                "('If I''m on holiday, do I prefer relaxing or exploring all day?')",
                 "('Would I rather cook a meal myself or order takeaway?')",
                 "('Do I prefer working alone or with a group?')",
                 "('Am I more likely to arrive early or right on time?')",
@@ -102,9 +102,9 @@ public class V22__Insert_Additional_Mind_Reader_Data extends BaseJavaMigration {
                 "('FUN', (SELECT ID FROM MIND_READER WHERE TEXT = 'Would I rather learn a musical instrument or a new language?'))",
                 "('INSIGHT', (SELECT ID FROM MIND_READER WHERE TEXT = 'Would I rather learn a musical instrument or a new language?'))",
 
-                "('PERSONALITY', (SELECT ID FROM MIND_READER WHERE TEXT = 'If I\'m on holiday, do I prefer relaxing or exploring all day?'))",
-                "('FUN', (SELECT ID FROM MIND_READER WHERE TEXT = 'If I\'m on holiday, do I prefer relaxing or exploring all day?'))",
-                "('GENERAL', (SELECT ID FROM MIND_READER WHERE TEXT = 'If I\'m on holiday, do I prefer relaxing or exploring all day?'))",
+                "('PERSONALITY', (SELECT ID FROM MIND_READER WHERE TEXT = 'If I''m on holiday, do I prefer relaxing or exploring all day?'))",
+                "('FUN', (SELECT ID FROM MIND_READER WHERE TEXT = 'If I''m on holiday, do I prefer relaxing or exploring all day?'))",
+                "('GENERAL', (SELECT ID FROM MIND_READER WHERE TEXT = 'If I''m on holiday, do I prefer relaxing or exploring all day?'))",
 
                 "('CASUAL', (SELECT ID FROM MIND_READER WHERE TEXT = 'Would I rather cook a meal myself or order takeaway?'))",
                 "('FOOD_DRINK', (SELECT ID FROM MIND_READER WHERE TEXT = 'Would I rather cook a meal myself or order takeaway?'))",
