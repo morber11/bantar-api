@@ -83,7 +83,6 @@ public class V13__Insert_additional_debates extends BaseJavaMigration {
     private Map<String, List<String>> buildDebates() {
         Map<String, List<String>> m = new HashMap<>();
 
-        // Handcrafted debates (100 unique items) — no phrasing templates are used.
         String[] debates = new String[]{
                 "Remote work should be a legal right for employees in high-cost cities.",
                 "Social media platforms must be required to label AI-generated political content.",

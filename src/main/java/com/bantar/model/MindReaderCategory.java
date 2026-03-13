@@ -12,7 +12,13 @@ public enum MindReaderCategory {
     SPORTS("Sports"),
     GENERAL("General"),
     INSIGHT("Insight"),
-    PERSONALITY("Personality");
+    PERSONALITY("Personality"),
+    CHILDHOOD("Childhood"),
+    LIFESTYLE("Lifestyle"),
+    TRAVEL("Travel"),
+    MEMORIES("Memories"),
+    FAVOURITES("Favourites"),
+    FOOD_DRINK("Food & Drink");
 
     private final String displayName;
 
