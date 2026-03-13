@@ -51,6 +51,5 @@ SPRING_DATASOURCE_PASSWORD=password
 
 ## Usage
 
-- Base API: `http://localhost:8080/api`
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- H2 console (if H2): `http://localhost:8080/h2-console`
+- Base API (will redirect to Swagger): `http://localhost:8080/api`
+- H2 console (if H2): `http://localhost:8080/api/h2-console`
