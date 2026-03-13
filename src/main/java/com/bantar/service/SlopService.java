@@ -9,13 +9,17 @@ import com.bantar.model.IcebreakerCategory;
 import com.bantar.repository.AiQuestionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.bantar.slop.SlopProvider; 
+import com.bantar.slop.SlopProvider;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.PersistenceException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.Executor;
 
 import static com.bantar.config.Constants.ICEBREAKERS_LLM_PROMPT;
 
@@ -36,8 +41,10 @@ public class SlopService {
     private static final Logger logger = LogManager.getLogger(SlopService.class);
     Map<String, Icebreaker> questionMap = new ConcurrentHashMap<>();
     private final SlopProvider aiProvider;
-    private final AiQuestionRepository aiQuestionRepository; 
-
+    private final AiQuestionRepository aiQuestionRepository;
+    private final Executor slopSeedExecutor;
+    private final boolean slopSeedEnabled;
+    private final long slopSeedBatchDelayMillis;
 
     private static final int INITIAL_QUESTION_COUNT = 30;
     private static final int TARGET_QUESTION_COUNT = 100;
@@ -45,9 +52,27 @@ public class SlopService {
     private static final int MAX_BATCH_ATTEMPTS = 10;
 
     @Autowired
-    public SlopService(SlopProvider aiProvider, AiQuestionRepository aiQuestionRepository) {
+    public SlopService(SlopProvider aiProvider,
+            AiQuestionRepository aiQuestionRepository,
+            @Qualifier("slopSeedExecutor") Executor slopSeedExecutor,
+            @Value("${slop.seed.enabled:true}") boolean slopSeedEnabled,
+            @Value("${slop.seed.batchDelayMillis:5000}") long slopSeedBatchDelayMillis) {
         this.aiProvider = aiProvider;
         this.aiQuestionRepository = aiQuestionRepository;
+        this.slopSeedExecutor = slopSeedExecutor;
+        this.slopSeedEnabled = slopSeedEnabled;
+        this.slopSeedBatchDelayMillis = slopSeedBatchDelayMillis;
+    }
+
+    /**
+     * Backwards-compatible constructor for tests that instantiate SlopService
+     * directly
+     * Uses a direct executor and disables background seeding so behavior remains
+     * deterministic
+     * Needed for tests
+     */
+    public SlopService(SlopProvider aiProvider, AiQuestionRepository aiQuestionRepository) {
+        this(aiProvider, aiQuestionRepository, Runnable::run, false, 5000L);
     }
 
     @SuppressWarnings("unused")
@@ -56,7 +81,8 @@ public class SlopService {
         logger.info("SlopService initialized using provider {}", aiProvider.getClass().getName());
         try {
             aiQuestionRepository.findAll().forEach(entity -> {
-                ResponseDTO<IcebreakerCategory> dto = IcebreakerMapper.toGenericModel(new IcebreakerEntity(entity.getId(), entity.getText(), null));
+                ResponseDTO<IcebreakerCategory> dto = IcebreakerMapper
+                        .toGenericModel(new IcebreakerEntity(entity.getId(), entity.getText(), null));
                 Icebreaker q = new Icebreaker(dto.getText(), dto.getId());
                 q.setCategories(List.of(IcebreakerCategory.CASUAL));
                 try {
@@ -72,8 +98,10 @@ public class SlopService {
             generateQuestions(INITIAL_QUESTION_COUNT);
 
             // ensure we always have 100 questions in the initial repository
+            // seeding can be long-running; run it asynchronously after startup
             if (aiQuestionRepository.count() < TARGET_QUESTION_COUNT) {
-                seedRepository();
+                logger.info("AI question count below target ({}). Background seeding will run after startup.",
+                        aiQuestionRepository.count());
             }
         } catch (Exception e) {
             logger.error("An error occurred during the initial question generation", e);
@@ -122,7 +150,9 @@ public class SlopService {
         int added = 0;
         for (Icebreaker q : icebreakers) {
             String normalized = q.getText() == null ? "" : q.getText().trim();
-            if (normalized.isBlank()) continue;
+
+            if (normalized.isBlank())
+                continue;
 
             String key;
             try {
@@ -175,22 +205,52 @@ public class SlopService {
         return sb.toString();
     }
 
-    private void seedRepository() {
-        try {
-            int attempts = 0;
-            while (aiQuestionRepository.count() < TARGET_QUESTION_COUNT && attempts < MAX_BATCH_ATTEMPTS) {
-                logger.info("AI question count is {} - generating {} more (attempt {}/{})",
-                        aiQuestionRepository.count(), BATCH_GENERATE_COUNT, attempts + 1, MAX_BATCH_ATTEMPTS);
-
-                generateQuestions(BATCH_GENERATE_COUNT);
-                ++attempts;
-            }
-            if (aiQuestionRepository.count() < TARGET_QUESTION_COUNT) {
-                logger.warn("Reached max batch attempts but only have {} AI questions; target is {}",
-                        aiQuestionRepository.count(), TARGET_QUESTION_COUNT);
-            }
-        } catch (Exception ex) {
-            logger.error("Error while seeding AI questions", ex);
+    @SuppressWarnings({ "unused", "BusyWait" })
+    @EventListener(ApplicationReadyEvent.class)
+    public void startBackgroundSeeding() {
+        if (!slopSeedEnabled) {
+            logger.info("Slop background seeding is disabled by configuration.");
+            return;
         }
+
+        long current = aiQuestionRepository.count();
+        if (current >= TARGET_QUESTION_COUNT) {
+            logger.info("AI question count is {} which meets target {}; skipping background seeding.", current,
+                    TARGET_QUESTION_COUNT);
+            return;
+        }
+
+        logger.info("Scheduling background AI seeding (target={}, current={})", TARGET_QUESTION_COUNT, current);
+        slopSeedExecutor.execute(() -> {
+            try {
+                int attempts = 0;
+                while (aiQuestionRepository.count() < TARGET_QUESTION_COUNT && attempts < MAX_BATCH_ATTEMPTS) {
+                    logger.info("Background seeding: AI question count is {} - generating {} more (attempt {}/{})",
+                            aiQuestionRepository.count(), BATCH_GENERATE_COUNT, attempts + 1, MAX_BATCH_ATTEMPTS);
+
+                    generateQuestions(BATCH_GENERATE_COUNT);
+                    attempts++;
+
+                    if (aiQuestionRepository.count() < TARGET_QUESTION_COUNT) {
+                        try {
+                            Thread.sleep(slopSeedBatchDelayMillis);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            logger.warn("Background seeding interrupted; stopping further attempts.");
+                            break;
+                        }
+                    }
+                }
+
+                if (aiQuestionRepository.count() < TARGET_QUESTION_COUNT) {
+                    logger.warn("Background seeding reached max attempts but only have {} AI questions; target is {}",
+                            aiQuestionRepository.count(), TARGET_QUESTION_COUNT);
+                } else {
+                    logger.info("Background seeding completed; now have {} AI questions", aiQuestionRepository.count());
+                }
+            } catch (Exception ex) {
+                logger.error("Error while running background AI seeding", ex);
+            }
+        });
     }
 }
