@@ -2,10 +2,8 @@ package com.bantar.service;
 
 import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.TopListEntity;
-import com.bantar.entity.TopListCategoryEntity;
 import com.bantar.model.TopListCategory;
 import com.bantar.repository.TopListRepository;
-import com.bantar.repository.TopListCategoryRepository;
 import com.bantar.service.interfaces.QuestionService;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
@@ -23,14 +21,12 @@ public class TopListService implements QuestionService {
     private static final Logger logger = LogManager.getLogger(TopListService.class);
 
     private final TopListRepository topListRepository;
-    private final TopListCategoryRepository topListCategoryRepository;
     private final AtomicReference<List<ResponseDTO<TopListCategory>>> cachedTopLists = new AtomicReference<>();
 
     @Autowired
-    public TopListService(TopListRepository topListRepository, TopListCategoryRepository topListCategoryRepository) {
+    public TopListService(TopListRepository topListRepository) {
         logger.info("Initializing TopListService");
         this.topListRepository = topListRepository;
-        this.topListCategoryRepository = topListCategoryRepository;
     }
 
     @SuppressWarnings("unused")
@@ -119,21 +115,15 @@ public class TopListService implements QuestionService {
     }
 
     private synchronized void loadTopLists() {
-        List<TopListEntity> topLists = topListRepository.getAllTopLists();
-
-        List<Long> topListIds = topLists.stream()
-                .map(TopListEntity::getId)
-                .collect(Collectors.toList());
-
-        List<TopListCategoryEntity> topListCategoryEntities = topListIds.isEmpty() ? Collections.emptyList() : topListCategoryRepository.findByTopListIdIn(topListIds);
-
-        Map<Long, List<TopListCategory>> topListCategoryMap = topListCategoryEntities.stream()
-                .collect(Collectors.groupingBy(categoryEntity -> categoryEntity.getTopList().getId(),
-                        Collectors.mapping(categoryEntity -> TopListCategory.valueOf(categoryEntity.getCategory()), Collectors.toList())));
+        List<TopListEntity> topLists = topListRepository.findAllWithCategories();
 
         cachedTopLists.set(topLists.stream()
                 .map(i -> {
-                    List<TopListCategory> categories = topListCategoryMap.getOrDefault(i.getId(), Collections.emptyList());
+                    List<TopListCategory> categories = i.getCategories() == null
+                            ? Collections.emptyList()
+                            : i.getCategories().stream()
+                                    .map(c -> TopListCategory.valueOf(c.getCategory()))
+                                    .collect(Collectors.toList());
                     return new ResponseDTO<>(i.getText(), i.getId(), categories);
                 })
                 .collect(Collectors.toList()));

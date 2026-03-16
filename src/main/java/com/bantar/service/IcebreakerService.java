@@ -1,10 +1,8 @@
 package com.bantar.service;
 
 import com.bantar.dto.ResponseDTO;
-import com.bantar.entity.IcebreakerCategoryEntity;
 import com.bantar.entity.IcebreakerEntity;
 import com.bantar.model.IcebreakerCategory;
-import com.bantar.repository.IcebreakerCategoryRepository;
 import com.bantar.repository.IcebreakerRepository;
 import com.bantar.service.interfaces.QuestionService;
 import jakarta.annotation.PostConstruct;
@@ -22,15 +20,13 @@ public class IcebreakerService implements QuestionService {
 
     private static final Logger logger = LogManager.getLogger(IcebreakerService.class);
     private final IcebreakerRepository icebreakerRepository;
-    private final IcebreakerCategoryRepository icebreakerCategoryRepository;
 
     private final AtomicReference<List<ResponseDTO<IcebreakerCategory>>> cachedQuestions = new AtomicReference<>();
 
     @Autowired
-    public IcebreakerService(IcebreakerRepository icebreakerRepository, IcebreakerCategoryRepository icebreakerCategoryRepository) {
+    public IcebreakerService(IcebreakerRepository icebreakerRepository) {
         logger.info("Initializing QuestionServiceImpl");
         this.icebreakerRepository = icebreakerRepository;
-        this.icebreakerCategoryRepository = icebreakerCategoryRepository;
     }
 
     @SuppressWarnings("unused")
@@ -119,25 +115,15 @@ public class IcebreakerService implements QuestionService {
     }
 
     private synchronized void loadQuestions() {
-        List<IcebreakerEntity> icebreakerQuestions = icebreakerRepository.getAllIcebreakers();
-
-        List<Long> questionIds = icebreakerQuestions.stream()
-                .map(IcebreakerEntity::getId)
-                .collect(Collectors.toList());
-
-        List<IcebreakerCategoryEntity> questionCategoryEntities = questionIds.isEmpty()
-                ? Collections.emptyList()
-                : icebreakerCategoryRepository.findByQuestionIdIn(questionIds);
-
-        Map<Long, List<IcebreakerCategory>> questionCategoriesMap = questionCategoryEntities.stream()
-                .collect(Collectors.groupingBy(categoryEntity -> categoryEntity.getQuestion().getId(),
-                        Collectors.mapping(categoryEntity -> IcebreakerCategory.valueOf(categoryEntity.getCategory()),
-                                Collectors.toList())));
+        List<IcebreakerEntity> icebreakerQuestions = icebreakerRepository.findAllWithCategories();
 
         cachedQuestions.set(icebreakerQuestions.stream()
                 .map(q -> {
-                    List<IcebreakerCategory> categories = questionCategoriesMap.getOrDefault(q.getId(),
-                            Collections.emptyList());
+                    List<IcebreakerCategory> categories = q.getCategories() == null
+                            ? Collections.emptyList()
+                            : q.getCategories().stream()
+                                    .map(c -> IcebreakerCategory.valueOf(c.getCategory()))
+                                    .collect(Collectors.toList());
                     return new ResponseDTO<>(q.getText(), q.getId(), categories);
                 })
                 .collect(Collectors.toList()));

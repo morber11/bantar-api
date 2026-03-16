@@ -4,8 +4,6 @@ import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.MindReaderEntity;
 import com.bantar.model.MindReaderCategory;
 import com.bantar.repository.MindReaderRepository;
-import com.bantar.repository.MindReaderCategoryRepository;
-import com.bantar.entity.MindReaderCategoryEntity;
 import com.bantar.service.interfaces.QuestionService;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
@@ -23,14 +21,12 @@ public class MindReaderService implements QuestionService {
     private static final Logger logger = LogManager.getLogger(MindReaderService.class);
 
     private final MindReaderRepository mindReaderRepository;
-    private final MindReaderCategoryRepository mindReaderCategoryRepository;
     private final AtomicReference<List<ResponseDTO<MindReaderCategory>>> cachedQuestions = new AtomicReference<>();
 
     @Autowired
-    public MindReaderService(MindReaderRepository mindReaderRepository, MindReaderCategoryRepository mindReaderCategoryRepository) {
+    public MindReaderService(MindReaderRepository mindReaderRepository) {
         logger.info("Initializing MindReaderService");
         this.mindReaderRepository = mindReaderRepository;
-        this.mindReaderCategoryRepository = mindReaderCategoryRepository;
     }
 
     @SuppressWarnings("unused")
@@ -116,24 +112,17 @@ public class MindReaderService implements QuestionService {
     }
 
     private synchronized void loadQuestions() {
-        List<MindReaderEntity> items = mindReaderRepository.getAll();
-
-        List<Long> ids = items.stream()
-                .map(MindReaderEntity::getId)
-                .collect(Collectors.toList());
-
-        List<MindReaderCategoryEntity> categoryEntities = ids.isEmpty()
-                ? Collections.emptyList()
-                : mindReaderCategoryRepository.findByMindReaderIdIn(ids);
-
-        Map<Long, List<MindReaderCategory>> categoryMap = categoryEntities.stream()
-                .collect(Collectors.groupingBy(ent -> ent.getMindReader().getId(),
-                        Collectors.mapping(ent -> MindReaderCategory.valueOf(ent.getCategoryCode()),
-                                Collectors.toList())));
+        List<MindReaderEntity> items = mindReaderRepository.findAllWithCategories();
 
         cachedQuestions.set(items.stream()
-                .map(entity -> new ResponseDTO<>(entity.getText(), entity.getId(),
-                        categoryMap.getOrDefault(entity.getId(), Collections.emptyList())))
+                .map(entity -> {
+                    List<MindReaderCategory> categories = entity.getCategories() == null
+                            ? Collections.emptyList()
+                            : entity.getCategories().stream()
+                                    .map(c -> MindReaderCategory.valueOf(c.getCategoryCode()))
+                                    .collect(Collectors.toList());
+                    return new ResponseDTO<>(entity.getText(), entity.getId(), categories);
+                })
                 .collect(Collectors.toList()));
     }
 

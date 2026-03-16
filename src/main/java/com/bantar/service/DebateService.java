@@ -1,10 +1,8 @@
 package com.bantar.service;
 
-import com.bantar.entity.DebateCategoryEntity;
 import com.bantar.entity.DebateEntity;
 import com.bantar.model.DebateCategory;
 import com.bantar.dto.ResponseDTO;
-import com.bantar.repository.DebateCategoryRepository;
 import com.bantar.repository.DebateRepository;
 import com.bantar.service.interfaces.QuestionService;
 import jakarta.annotation.PostConstruct;
@@ -22,15 +20,13 @@ public class DebateService implements QuestionService {
 
     private static final Logger logger = LogManager.getLogger(DebateService.class);
     private final DebateRepository debateRepository;
-    private final DebateCategoryRepository debateCategoryRepository;
 
     private final AtomicReference<List<ResponseDTO<DebateCategory>>> cachedDebates = new AtomicReference<>();
 
     @Autowired
-    public DebateService(DebateRepository debateRepository, DebateCategoryRepository debateCategoryRepository) {
+    public DebateService(DebateRepository debateRepository) {
         logger.info("Initializing DebateService");
         this.debateRepository = debateRepository;
-        this.debateCategoryRepository = debateCategoryRepository;
     }
 
     @SuppressWarnings("unused")
@@ -119,23 +115,15 @@ public class DebateService implements QuestionService {
     }
 
     private synchronized void loadDebates() {
-        List<DebateEntity> debates = debateRepository.findAll();
-
-        List<Long> debateIds = debates.stream()
-                .map(DebateEntity::getId)
-                .collect(Collectors.toList());
-
-        List<DebateCategoryEntity> debateCategoryEntities = debateIds.isEmpty()
-                ? Collections.emptyList()
-                : debateCategoryRepository.findByDebateIdIn(debateIds);
-
-        Map<Long, List<DebateCategory>> debateCategoriesMap = debateCategoryEntities.stream()
-                .collect(Collectors.groupingBy(categoryEntity -> categoryEntity.getDebate().getId(),
-                        Collectors.mapping(categoryEntity -> DebateCategory.valueOf(categoryEntity.getCategory()), Collectors.toList())));
+        List<DebateEntity> debates = debateRepository.findAllWithCategories();
 
         cachedDebates.set(debates.stream()
                 .map(q -> {
-                    List<DebateCategory> categories = debateCategoriesMap.getOrDefault(q.getId(), Collections.emptyList());
+                    List<DebateCategory> categories = q.getCategories() == null
+                            ? Collections.emptyList()
+                            : q.getCategories().stream()
+                                    .map(c -> DebateCategory.valueOf(c.getCategory()))
+                                    .collect(Collectors.toList());
                     return new ResponseDTO<>(q.getText(), q.getId(), categories);
                 })
                 .collect(Collectors.toList()));
