@@ -1,8 +1,9 @@
 package com.bantar.controller;
 
 import com.bantar.dto.ResponseDTO;
-import com.bantar.service.TopListService;
+import com.bantar.service.interfaces.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +24,10 @@ public class TopListController {
 
     private static final Logger logger = LoggerFactory.getLogger(TopListController.class);
 
-    private final TopListService topListService;
+    private final QuestionService topListService;
 
     @Autowired
-    public TopListController(TopListService topListService) {
+    public TopListController(@Qualifier("topListService") QuestionService topListService) {
         this.topListService = topListService;
     }
 

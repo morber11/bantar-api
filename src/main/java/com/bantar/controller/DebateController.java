@@ -1,8 +1,9 @@
 package com.bantar.controller;
 
 import com.bantar.dto.ResponseDTO;
-import com.bantar.service.DebateService;
+import com.bantar.service.interfaces.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +24,10 @@ public class DebateController {
 
     private static final Logger logger = LoggerFactory.getLogger(DebateController.class);
 
-    private final DebateService debateService;
+    private final QuestionService debateService;
 
     @Autowired
-    public DebateController(DebateService debateService) {
+    public DebateController(@Qualifier("debateService") QuestionService debateService) {
         this.debateService = debateService;
     }
 

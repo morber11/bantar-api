@@ -1,8 +1,9 @@
 package com.bantar.controller;
 
 import com.bantar.dto.ResponseDTO;
-import com.bantar.service.IcebreakerService;
+import com.bantar.service.interfaces.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +24,10 @@ public class IcebreakerController {
 
     private static final Logger logger = LoggerFactory.getLogger(IcebreakerController.class);
 
-    private final IcebreakerService questionService;
+    private final QuestionService questionService;
 
     @Autowired
-    public IcebreakerController(IcebreakerService questionService) {
+    public IcebreakerController(@Qualifier("icebreakerService") QuestionService questionService) {
         this.questionService = questionService;
     }
 
