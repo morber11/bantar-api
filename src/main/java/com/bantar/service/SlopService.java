@@ -197,6 +197,8 @@ public class SlopService {
         return cleaned.substring(startIndex);
     }
 
+    // SHA-256 will always exist but getInstance throws a NoSuchAlogrithmException
+    // that we need to handle anyway
     private String sha256(String text) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hashBytes = digest.digest(text.getBytes(StandardCharsets.UTF_8));
