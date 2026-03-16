@@ -95,7 +95,9 @@ public class SlopService {
             });
             logger.info("{} ai questions preloaded from database", questionMap.size());
 
-            generateQuestions(INITIAL_QUESTION_COUNT);
+            if (slopSeedEnabled) {
+                generateQuestions(INITIAL_QUESTION_COUNT);
+            }
 
             // ensure we always have 100 questions in the initial repository
             // seeding can be long-running; run it asynchronously after startup
