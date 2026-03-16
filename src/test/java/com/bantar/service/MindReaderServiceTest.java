@@ -4,7 +4,6 @@ import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.MindReaderCategoryEntity;
 import com.bantar.entity.MindReaderEntity;
 import com.bantar.repository.MindReaderRepository;
-import com.bantar.repository.MindReaderCategoryRepository;
 import com.bantar.service.interfaces.QuestionService;
 import java.util.ArrayList;
 import org.junit.jupiter.api.AfterEach;
@@ -23,26 +22,13 @@ class MindReaderServiceTest {
     private QuestionService mindReaderService;
     @Mock
     private MindReaderRepository mindReaderRepository;
-    @Mock
-    private MindReaderCategoryRepository mindReaderCategoryRepository;
-    @Mock
+        @Mock
     private AutoCloseable closeable;
 
     @BeforeEach
     void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
-        mindReaderService = new MindReaderService(mindReaderRepository, mindReaderCategoryRepository);
-
-        when(mindReaderCategoryRepository.findByMindReaderIdIn(org.mockito.ArgumentMatchers.anyList()))
-                .thenAnswer(invocation -> {
-                    List<MindReaderEntity> ents = createEntities();
-                    List<MindReaderCategoryEntity> cats = new ArrayList<>();
-                    for (MindReaderEntity e : ents) {
-                        if (e.getCategories() != null) cats.addAll(e.getCategories());
-                    }
-                    return cats;
-                });
-    }
+        mindReaderService = new MindReaderService(mindReaderRepository);    }
 
     @AfterEach
     void tearDown() throws Exception {
@@ -71,7 +57,7 @@ class MindReaderServiceTest {
         MindReaderEntity entity = new MindReaderEntity(1L, "Guess what number I'm thinking of");
         List<MindReaderEntity> entities = List.of(entity);
 
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         ResponseDTO<?> dto = mindReaderService.getById(1);
 
@@ -83,7 +69,7 @@ class MindReaderServiceTest {
     @Test
     void testGetAll() {
         List<MindReaderEntity> entities = createEntities();
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         List<ResponseDTO<?>> list = mindReaderService.getAll();
 
@@ -93,7 +79,7 @@ class MindReaderServiceTest {
     @Test
     void testGetByRange() {
         List<MindReaderEntity> entities = createEntities();
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         List<ResponseDTO<?>> list = mindReaderService.getByRange(1, 2);
 
@@ -104,7 +90,7 @@ class MindReaderServiceTest {
     @Test
     void testGetByCategory() {
         List<MindReaderEntity> entities = createEntities();
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         List<ResponseDTO<?>> list = mindReaderService.getByCategory("FUN");
 
@@ -115,7 +101,7 @@ class MindReaderServiceTest {
     @Test
     void testGetByCategories() {
         List<MindReaderEntity> entities = createEntities();
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         List<ResponseDTO<?>> list = mindReaderService.getByCategories(List.of("FUN", "GENERAL"));
 
@@ -130,7 +116,7 @@ class MindReaderServiceTest {
     @Test
     void testGetByFilteredCategories() {
         List<MindReaderEntity> entities = createEntities();
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         List<ResponseDTO<?>> list = mindReaderService.getByFilteredCategories(List.of("INSIGHT", "PERSONALITY"));
 
@@ -141,7 +127,7 @@ class MindReaderServiceTest {
     @Test
     void testRefresh() {
         List<MindReaderEntity> entities = createEntities();
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         mindReaderService.refresh();
 
@@ -153,7 +139,7 @@ class MindReaderServiceTest {
     @Test
     void testGetByInvalidCategory() {
         List<MindReaderEntity> entities = createEntities();
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         List<ResponseDTO<?>> list = mindReaderService.getByCategory("INVALID");
 
@@ -163,7 +149,7 @@ class MindReaderServiceTest {
     @Test
     void testGetByCategoriesAllInvalid() {
         List<MindReaderEntity> entities = createEntities();
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         List<ResponseDTO<?>> list = mindReaderService.getByCategories(List.of("WRONG", "BAD"));
 
@@ -173,7 +159,7 @@ class MindReaderServiceTest {
     @Test
     void testGetByFilteredCategoriesInvalid() {
         List<MindReaderEntity> entities = createEntities();
-        when(mindReaderRepository.getAll()).thenReturn(entities);
+        when(mindReaderRepository.findAllWithCategories()).thenReturn(entities);
 
         List<ResponseDTO<?>> list = mindReaderService.getByFilteredCategories(List.of("FUN", "INSIGHT")); // none match both
 

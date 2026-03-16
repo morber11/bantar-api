@@ -4,7 +4,6 @@ import com.bantar.entity.DebateCategoryEntity;
 import com.bantar.entity.DebateEntity;
 import com.bantar.model.DebateCategory;
 import com.bantar.dto.ResponseDTO;
-import com.bantar.repository.DebateCategoryRepository;
 import com.bantar.repository.DebateRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,16 +22,13 @@ class DebateServiceTest {
 
     @Mock
     private DebateRepository debateRepository;
-    @Mock
-    private DebateCategoryRepository debateCategoryRepository;
-
-    private DebateService debateService;
+        private DebateService debateService;
     private AutoCloseable closeable;
 
     @BeforeEach
     void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
-        debateService = new DebateService(debateRepository, debateCategoryRepository);
+        debateService = new DebateService(debateRepository);
     }
 
     @AfterEach
@@ -41,15 +37,13 @@ class DebateServiceTest {
     }
 
     private List<DebateEntity> createDebateEntities() {
-        DebateCategoryEntity category = new DebateCategoryEntity();
-        category.setCategory("CASUAL");
-        List<DebateCategoryEntity> categories = Collections.singletonList(category);
-
-        return Arrays.asList(
-                new DebateEntity(1L, "Should we colonize Mars?", categories),
-                new DebateEntity(2L, "Is AI a threat?", categories),
-                new DebateEntity(3L, "Should voting be mandatory?", categories)
-        );
+        DebateEntity d1 = new DebateEntity(1L, "Should we colonize Mars?");
+        DebateEntity d2 = new DebateEntity(2L, "Is AI a threat?");
+        DebateEntity d3 = new DebateEntity(3L, "Should voting be mandatory?");
+        d1.setCategories(List.of(new DebateCategoryEntity(1L, "CASUAL", d1)));
+        d2.setCategories(Arrays.asList(new DebateCategoryEntity(2L, "CASUAL", d2), new DebateCategoryEntity(5L, "ETHICS", d2)));
+        d3.setCategories(Arrays.asList(new DebateCategoryEntity(3L, "CASUAL", d3), new DebateCategoryEntity(6L, "EDUCATION", d3)));
+        return Arrays.asList(d1, d2, d3);
     }
 
     private List<DebateCategoryEntity> createDebateCategoryEntities() {
@@ -76,7 +70,7 @@ class DebateServiceTest {
         DebateEntity debate = new DebateEntity(1, "Should we colonize Mars?");
         List<DebateEntity> debates = List.of(debate);
 
-        when(debateRepository.findAll()).thenReturn(debates);
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
 
         ResponseDTO<?> result = debateService.getById(1);
 
@@ -88,7 +82,7 @@ class DebateServiceTest {
     @Test
     void testGetAllQuestions() {
         List<DebateEntity> debates = createDebateEntities();
-        when(debateRepository.findAll()).thenReturn(debates);
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
 
         List<ResponseDTO<?>> result = debateService.getAll();
 
@@ -103,7 +97,7 @@ class DebateServiceTest {
         List<DebateCategoryEntity> categories = Collections.singletonList(category);
 
         List<DebateEntity> debates = List.of(new DebateEntity(1, "Should we colonize Mars?", categories));
-        when(debateRepository.findAll()).thenReturn(debates);
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
 
 
         ResponseDTO<?> result = debateService.getById(999);
@@ -114,7 +108,7 @@ class DebateServiceTest {
     @Test
     void testRefreshQuestions() {
         List<DebateEntity> debates = createDebateEntities();
-        when(debateRepository.findAll()).thenReturn(debates);
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
 
         debateService.refresh();
 
@@ -131,7 +125,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionsByRange() {
         List<DebateEntity> debates = createDebateEntities();
-        when(debateRepository.findAll()).thenReturn(debates);
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
 
         List<ResponseDTO<?>> result = debateService.getByRange(1, 2);
 
@@ -144,7 +138,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionsByRangeWithStartGreaterThanEnd() {
         List<DebateEntity> debates = createDebateEntities();
-        when(debateRepository.findAll()).thenReturn(debates);
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
 
         List<ResponseDTO<?>> result = debateService.getByRange(2, 1000);
 
@@ -155,7 +149,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionsByRangeWithLimitExceedingSize() {
         List<DebateEntity> debates = createDebateEntities();
-        when(debateRepository.findAll()).thenReturn(debates);
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
 
         List<ResponseDTO<?>> result = debateService.getByRange(0, 10);
 
@@ -166,7 +160,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionsByRangeWithValidRange() {
         List<DebateEntity> debates = createDebateEntities();
-        when(debateRepository.findAll()).thenReturn(debates);
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
 
         List<ResponseDTO<?>> result = debateService.getByRange(1, 2);
 
@@ -179,11 +173,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionsByValidCategory() {
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByCategory(DebateCategory.CASUAL.name());
 
         assertNotNull(result);
@@ -209,11 +199,7 @@ class DebateServiceTest {
         List<String> categories = List.of("ETHICS");
 
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(categories);
 
         assertNotNull(result);
@@ -231,11 +217,7 @@ class DebateServiceTest {
         List<String> categories = List.of("ETHICS", "invalid");
 
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(categories);
 
         assertNotNull(result);
@@ -251,11 +233,7 @@ class DebateServiceTest {
         List<String> categories = List.of("wrong", "invalid");
 
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(categories);
 
         assertTrue(result == null || result.isEmpty());
@@ -264,11 +242,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionsByFilteredCategoriesEmptyList() {
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(Collections.emptyList());
 
         assertTrue(result == null || result.isEmpty());
@@ -277,11 +251,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionsByFilteredCategoriesNullList() {
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(null);
 
         assertTrue(result == null || result.isEmpty());
@@ -292,11 +262,7 @@ class DebateServiceTest {
         List<String> categories = List.of("ETHICS", "EDUCATION");
 
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByCategories(categories);
 
         assertNotNull(result);
@@ -308,11 +274,7 @@ class DebateServiceTest {
         List<String> categories = List.of("EDUCATION", "invalid");
 
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByCategories(categories);
 
         assertNotNull(result);
@@ -327,11 +289,7 @@ class DebateServiceTest {
         List<String> categories = List.of("wrong", "invalid");
 
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByCategories(categories);
 
         assertTrue(result == null || result.isEmpty());
@@ -340,11 +298,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionsByCategoriesEmptyList() {
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByCategories(Collections.emptyList());
 
         assertTrue(result == null || result.isEmpty());
@@ -353,11 +307,7 @@ class DebateServiceTest {
     @Test
     void testGetQuestionsByCategoriesNullList() {
         List<DebateEntity> debates = createDebateEntities();
-        List<DebateCategoryEntity> debateCategories = createDebateCategoryEntities();
-
-        when(debateRepository.findAll()).thenReturn(debates);
-        when(debateCategoryRepository.findByDebateIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(debateCategories);
-
+        when(debateRepository.findAllWithCategories()).thenReturn(debates);
         List<ResponseDTO<?>> result = debateService.getByCategories(null);
 
         assertTrue(result == null || result.isEmpty());

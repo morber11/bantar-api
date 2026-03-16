@@ -4,7 +4,6 @@ import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.IcebreakerCategoryEntity;
 import com.bantar.entity.IcebreakerEntity;
 import com.bantar.model.IcebreakerCategory;
-import com.bantar.repository.IcebreakerCategoryRepository;
 import com.bantar.repository.IcebreakerRepository;
 import com.bantar.service.interfaces.QuestionService;
 import org.junit.jupiter.api.AfterEach;
@@ -25,15 +24,12 @@ class IcebreakerServiceTest {
     private QuestionService questionService;
     @Mock
     private IcebreakerRepository icebreakerRepository;
-    @Mock
-    IcebreakerCategoryRepository icebreakerCategoryRepository;
-
-    private AutoCloseable closeable;
+        private AutoCloseable closeable;
 
     @BeforeEach
     void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
-        questionService = new IcebreakerService(icebreakerRepository, icebreakerCategoryRepository);
+        questionService = new IcebreakerService(icebreakerRepository);
     }
 
     @AfterEach
@@ -42,15 +38,13 @@ class IcebreakerServiceTest {
     }
 
     private List<IcebreakerEntity> createQuestionEntities() {
-        IcebreakerCategoryEntity category = new IcebreakerCategoryEntity();
-        category.setCategory("CASUAL");
-        List<IcebreakerCategoryEntity> categories = Collections.singletonList(category);
-
-        return Arrays.asList(
-                new IcebreakerEntity(1L, "What is your favorite color?", categories),
-                new IcebreakerEntity(2L, "What is your dream job?", categories),
-                new IcebreakerEntity(3L, "What is your favorite book?", categories)
-        );
+        IcebreakerEntity q1 = new IcebreakerEntity(1L, "What is your favorite color?");
+        IcebreakerEntity q2 = new IcebreakerEntity(2L, "What is your dream job?");
+        IcebreakerEntity q3 = new IcebreakerEntity(3L, "What is your favorite book?");
+        q1.setCategories(List.of(new IcebreakerCategoryEntity(1L, "ROMANTIC", q1)));
+        q2.setCategories(List.of(new IcebreakerCategoryEntity(2L, "CASUAL", q2)));
+        q3.setCategories(List.of(new IcebreakerCategoryEntity(3L, "SPORTS", q3)));
+        return Arrays.asList(q1, q2, q3);
     }
 
     private List<IcebreakerCategoryEntity> createQuestionCategoriesEntities() {
@@ -75,7 +69,7 @@ class IcebreakerServiceTest {
         IcebreakerEntity question = new IcebreakerEntity(1, "What is your favorite color?");
         List<IcebreakerEntity> questions = List.of(question);
 
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
 
         ResponseDTO<?> dto = questionService.getById(1);
 
@@ -87,7 +81,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetAllQuestions() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
 
         List<ResponseDTO<?>> result = questionService.getAll();
 
@@ -102,7 +96,7 @@ class IcebreakerServiceTest {
         List<IcebreakerCategoryEntity> categories = Collections.singletonList(category);
 
         List<IcebreakerEntity> questions = List.of(new IcebreakerEntity(1, "What is your favorite color?", categories));
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
 
 
         ResponseDTO<?> result = questionService.getById(999);
@@ -113,7 +107,7 @@ class IcebreakerServiceTest {
     @Test
     void testRefreshQuestions() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
 
         questionService.refresh();
 
@@ -130,7 +124,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionsByRange() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
 
         List<ResponseDTO<?>> result = questionService.getByRange(1, 2);
 
@@ -143,7 +137,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionsByRangeWithStartGreaterThanEnd() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
 
         List<ResponseDTO<?>> result = questionService.getByRange(2, 1000);
 
@@ -154,7 +148,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionsByRangeWithLimitExceedingSize() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
 
         List<ResponseDTO<?>> result = questionService.getByRange(0, 10);
 
@@ -165,7 +159,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionsByRangeWithValidRange() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
 
         List<ResponseDTO<?>> result = questionService.getByRange(1, 2);
 
@@ -178,11 +172,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionsByValidCategory() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-        List<ResponseDTO<?>> result = questionService.getByCategory("CASUAL");
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);        List<ResponseDTO<?>> result = questionService.getByCategory("CASUAL");
 
     assertNotNull(result);
     assertEquals(1, result.size());
@@ -205,11 +195,7 @@ class IcebreakerServiceTest {
     void testGetQuestionsByValidCategories() {
 
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByFilteredCategories(List.of("CASUAL"));
 
         assertNotNull(result);
@@ -227,11 +213,7 @@ class IcebreakerServiceTest {
         List<String> categories = List.of("CASUAL", "invalid");
 
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByFilteredCategories(categories);
 
         assertNotNull(result);
@@ -247,11 +229,7 @@ class IcebreakerServiceTest {
         List<String> categories = List.of("wrong", "invalid");
 
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByFilteredCategories(categories);
 
         assertTrue(result == null || result.isEmpty());
@@ -260,11 +238,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionsByFilteredCategoriesEmptyList() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByFilteredCategories(Collections.emptyList());
 
         assertTrue(result == null || result.isEmpty());
@@ -273,11 +247,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionsByFilteredCategoriesNullList() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByFilteredCategories(null);
 
         assertTrue(result == null || result.isEmpty());
@@ -288,11 +258,7 @@ class IcebreakerServiceTest {
         List<String> categories = List.of("CASUAL", "SPORTS");
 
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByCategories(categories);
 
         assertNotNull(result);
@@ -304,11 +270,7 @@ class IcebreakerServiceTest {
         List<String> categories = List.of("SPORTS", "invalid");
 
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByCategories(categories);
 
         assertNotNull(result);
@@ -323,11 +285,7 @@ class IcebreakerServiceTest {
         List<String> categories = List.of("wrong", "invalid");
 
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByCategories(categories);
 
         assertTrue(result == null || result.isEmpty());
@@ -336,11 +294,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionsByCategoriesEmptyList() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByCategories(Collections.emptyList());
 
         assertTrue(result == null || result.isEmpty());
@@ -349,11 +303,7 @@ class IcebreakerServiceTest {
     @Test
     void testGetQuestionsByCategoriesNullList() {
         List<IcebreakerEntity> questions = createQuestionEntities();
-        List<IcebreakerCategoryEntity> questionCategories = createQuestionCategoriesEntities();
-
-        when(icebreakerRepository.getAllIcebreakers()).thenReturn(questions);
-        when(icebreakerCategoryRepository.findByQuestionIdIn(Arrays.asList(1L, 2L, 3L))).thenReturn(questionCategories);
-
+        when(icebreakerRepository.findAllWithCategories()).thenReturn(questions);
         List<ResponseDTO<?>> result = questionService.getByCategories(null);
 
         assertTrue(result == null || result.isEmpty());

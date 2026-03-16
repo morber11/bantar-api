@@ -4,7 +4,6 @@ import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.TopListCategoryEntity;
 import com.bantar.entity.TopListEntity;
 import com.bantar.model.TopListCategory;
-import com.bantar.repository.TopListCategoryRepository;
 import com.bantar.repository.TopListRepository;
 import com.bantar.service.interfaces.QuestionService;
 import org.junit.jupiter.api.AfterEach;
@@ -24,16 +23,13 @@ class TopListServiceTest {
 
     @Mock
     private TopListRepository topListRepository;
-    @Mock
-    private TopListCategoryRepository topListCategoryRepository;
-
-    private QuestionService topListService;
+        private QuestionService topListService;
     private AutoCloseable closeable;
 
     @BeforeEach
     void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
-        topListService = new TopListService(topListRepository, topListCategoryRepository);
+        topListService = new TopListService(topListRepository);
     }
 
     @AfterEach
@@ -42,15 +38,13 @@ class TopListServiceTest {
     }
 
     private List<TopListEntity> createTopListEntities() {
-        TopListCategoryEntity category = new TopListCategoryEntity();
-        category.setCategory("CASUAL");
-        List<TopListCategoryEntity> categories = Collections.singletonList(category);
-
-        return Arrays.asList(
-                new TopListEntity(1L, "Top 10 Movies of All Time", categories),
-                new TopListEntity(2L, "Most Popular Restaurants in 2025", categories),
-                new TopListEntity(3L, "Classic Books Everyone Should Read", categories)
-        );
+        TopListEntity t1 = new TopListEntity(1L, "Top 10 Movies of All Time");
+        TopListEntity t2 = new TopListEntity(2L, "Most Popular Restaurants in 2025");
+        TopListEntity t3 = new TopListEntity(3L, "Classic Books Everyone Should Read");
+        t1.setCategories(List.of(new TopListCategoryEntity(1L, "TELEVISION_MOVIES", t1)));
+        t2.setCategories(List.of(new TopListCategoryEntity(2L, "CASUAL", t2)));
+        t3.setCategories(List.of(new TopListCategoryEntity(3L, "TRAVEL", t3)));
+        return Arrays.asList(t1, t2, t3);
     }
 
     private List<TopListCategoryEntity> createTopListCategoryEntities() {
@@ -75,7 +69,7 @@ class TopListServiceTest {
         TopListEntity item = new TopListEntity(1, "Top 10 Movies of All Time");
         List<TopListEntity> items = List.of(item);
 
-        when(topListRepository.getAllTopLists()).thenReturn(items);
+        when(topListRepository.findAllWithCategories()).thenReturn(items);
 
         ResponseDTO<?> dto = topListService.getById(1);
 
@@ -87,7 +81,7 @@ class TopListServiceTest {
     @Test
     void testGetAll() {
         List<TopListEntity> items = createTopListEntities();
-        when(topListRepository.getAllTopLists()).thenReturn(items);
+        when(topListRepository.findAllWithCategories()).thenReturn(items);
 
         List<ResponseDTO<?>> result = topListService.getAll();
 
@@ -98,7 +92,7 @@ class TopListServiceTest {
     @Test
     void testGetByIdNotFound() {
         List<TopListEntity> items = List.of(new TopListEntity(1, "Top 10 Movies of All Time"));
-        when(topListRepository.getAllTopLists()).thenReturn(items);
+        when(topListRepository.findAllWithCategories()).thenReturn(items);
 
         ResponseDTO<?> result = topListService.getById(999);
 
@@ -108,7 +102,7 @@ class TopListServiceTest {
     @Test
     void testRefresh() {
         List<TopListEntity> items = createTopListEntities();
-        when(topListRepository.getAllTopLists()).thenReturn(items);
+        when(topListRepository.findAllWithCategories()).thenReturn(items);
 
         topListService.refresh();
 
@@ -124,7 +118,7 @@ class TopListServiceTest {
     @Test
     void testGetByRange() {
         List<TopListEntity> items = createTopListEntities();
-        when(topListRepository.getAllTopLists()).thenReturn(items);
+        when(topListRepository.findAllWithCategories()).thenReturn(items);
 
         List<ResponseDTO<?>> result = topListService.getByRange(1, 2);
 
@@ -137,11 +131,7 @@ class TopListServiceTest {
     @Test
     void testGetByValidCategory() {
         List<TopListEntity> items = createTopListEntities();
-        List<TopListCategoryEntity> categories = createTopListCategoryEntities();
-
-        when(topListRepository.getAllTopLists()).thenReturn(items);
-        when(topListCategoryRepository.findByTopListIdIn(Arrays.asList(1L,2L,3L))).thenReturn(categories);
-
+        when(topListRepository.findAllWithCategories()).thenReturn(items);
         List<ResponseDTO<?>> result = topListService.getByCategory("CASUAL");
 
         assertNotNull(result);
@@ -166,11 +156,7 @@ class TopListServiceTest {
         List<String> categoriesFilter = List.of("CASUAL","TRAVEL");
 
         List<TopListEntity> items = createTopListEntities();
-        List<TopListCategoryEntity> categories = createTopListCategoryEntities();
-
-        when(topListRepository.getAllTopLists()).thenReturn(items);
-        when(topListCategoryRepository.findByTopListIdIn(Arrays.asList(1L,2L,3L))).thenReturn(categories);
-
+        when(topListRepository.findAllWithCategories()).thenReturn(items);
         List<ResponseDTO<?>> result = topListService.getByCategories(categoriesFilter);
 
         assertNotNull(result);
@@ -182,11 +168,7 @@ class TopListServiceTest {
         List<String> categoriesFilter = List.of("TRAVEL","invalid");
 
         List<TopListEntity> items = createTopListEntities();
-        List<TopListCategoryEntity> categories = createTopListCategoryEntities();
-
-        when(topListRepository.getAllTopLists()).thenReturn(items);
-        when(topListCategoryRepository.findByTopListIdIn(Arrays.asList(1L,2L,3L))).thenReturn(categories);
-
+        when(topListRepository.findAllWithCategories()).thenReturn(items);
         List<ResponseDTO<?>> result = topListService.getByFilteredCategories(categoriesFilter);
 
         assertNotNull(result);
