@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,7 +24,7 @@ public class IcebreakerService implements QuestionService {
     private final IcebreakerRepository icebreakerRepository;
     private final IcebreakerCategoryRepository icebreakerCategoryRepository;
 
-    private volatile List<ResponseDTO<IcebreakerCategory>> cachedQuestions;
+    private final AtomicReference<List<ResponseDTO<IcebreakerCategory>>> cachedQuestions = new AtomicReference<>();
 
     @Autowired
     public IcebreakerService(IcebreakerRepository icebreakerRepository, IcebreakerCategoryRepository icebreakerCategoryRepository) {
@@ -59,7 +60,7 @@ public class IcebreakerService implements QuestionService {
     @Override
     public List<ResponseDTO<?>> getAll() {
         ensureQuestionsLoaded();
-        return findQuestionsByRange(0, cachedQuestions.size()).stream()
+        return findQuestionsByRange(0, cachedQuestions.get().size()).stream()
                 .map(p -> (ResponseDTO<?>) p)
                 .collect(Collectors.toList());
     }
@@ -133,19 +134,21 @@ public class IcebreakerService implements QuestionService {
                         Collectors.mapping(categoryEntity -> IcebreakerCategory.valueOf(categoryEntity.getCategory()),
                                 Collectors.toList())));
 
-        cachedQuestions = icebreakerQuestions.stream()
+        cachedQuestions.set(icebreakerQuestions.stream()
                 .map(q -> {
                     List<IcebreakerCategory> categories = questionCategoriesMap.getOrDefault(q.getId(),
                             Collections.emptyList());
                     return new ResponseDTO<>(q.getText(), q.getId(), categories);
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     private void ensureQuestionsLoaded() {
-        if (cachedQuestions == null || cachedQuestions.isEmpty()) {
+        List<ResponseDTO<IcebreakerCategory>> snapshot = cachedQuestions.get();
+        if (snapshot == null || snapshot.isEmpty()) {
             synchronized (this) {
-                if (cachedQuestions == null || cachedQuestions.isEmpty()) {
+                snapshot = cachedQuestions.get();
+                if (snapshot == null || snapshot.isEmpty()) {
                     loadQuestions();
                 }
             }
@@ -153,21 +156,21 @@ public class IcebreakerService implements QuestionService {
     }
 
     private ResponseDTO<IcebreakerCategory> findQuestionById(int id) {
-        return cachedQuestions.stream()
+        return cachedQuestions.get().stream()
                 .filter(q -> q.getId() == id)
                 .findFirst()
                 .orElse(null);
     }
 
     private List<ResponseDTO<IcebreakerCategory>> findQuestionsByRange(int startId, int limit) {
-        return cachedQuestions.stream()
+        return cachedQuestions.get().stream()
                 .skip(startId)
                 .limit(limit)
                 .collect(Collectors.toList());
     }
 
     private List<ResponseDTO<IcebreakerCategory>> findQuestionsByCategory(IcebreakerCategory category) {
-        return cachedQuestions.stream()
+        return cachedQuestions.get().stream()
                 .filter(d -> d.getCategories() != null && d.getCategories().contains(category))
                 .collect(Collectors.toList());
     }
@@ -175,7 +178,7 @@ public class IcebreakerService implements QuestionService {
     private List<ResponseDTO<IcebreakerCategory>> findQuestionsByCategories(
             List<IcebreakerCategory> requiredCategories) {
         Set<IcebreakerCategory> requiredCategorySet = new HashSet<>(requiredCategories);
-        return cachedQuestions.stream()
+        return cachedQuestions.get().stream()
                 .filter(d -> d.getCategories() != null
                         && !Collections.disjoint(new HashSet<>(d.getCategories()), requiredCategorySet))
                 .collect(Collectors.toList());
@@ -183,7 +186,7 @@ public class IcebreakerService implements QuestionService {
 
     private List<ResponseDTO<IcebreakerCategory>> findQuestionsByFilteredCategories(
             List<IcebreakerCategory> requiredCategories) {
-        return cachedQuestions.stream()
+        return cachedQuestions.get().stream()
                 .filter(d -> d.getCategories() != null
                         && new HashSet<>(d.getCategories()).containsAll(requiredCategories))
                 .collect(Collectors.toList());

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,7 +24,7 @@ public class TopListService implements QuestionService {
 
     private final TopListRepository topListRepository;
     private final TopListCategoryRepository topListCategoryRepository;
-    private volatile List<ResponseDTO<TopListCategory>> cachedTopLists;
+    private final AtomicReference<List<ResponseDTO<TopListCategory>>> cachedTopLists = new AtomicReference<>();
 
     @Autowired
     public TopListService(TopListRepository topListRepository, TopListCategoryRepository topListCategoryRepository) {
@@ -59,7 +60,7 @@ public class TopListService implements QuestionService {
     @Override
     public List<ResponseDTO<?>> getAll() {
         ensureTopListsLoaded();
-        return findTopListsByRange(0, cachedTopLists.size()).stream()
+        return findTopListsByRange(0, cachedTopLists.get().size()).stream()
                 .map(p -> (ResponseDTO<?>) p)
                 .collect(Collectors.toList());
     }
@@ -130,18 +131,20 @@ public class TopListService implements QuestionService {
                 .collect(Collectors.groupingBy(categoryEntity -> categoryEntity.getTopList().getId(),
                         Collectors.mapping(categoryEntity -> TopListCategory.valueOf(categoryEntity.getCategory()), Collectors.toList())));
 
-        cachedTopLists = topLists.stream()
+        cachedTopLists.set(topLists.stream()
                 .map(i -> {
                     List<TopListCategory> categories = topListCategoryMap.getOrDefault(i.getId(), Collections.emptyList());
                     return new ResponseDTO<>(i.getText(), i.getId(), categories);
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     private void ensureTopListsLoaded() {
-        if (cachedTopLists == null || cachedTopLists.isEmpty()) {
+        List<ResponseDTO<TopListCategory>> snapshot = cachedTopLists.get();
+        if (snapshot == null || snapshot.isEmpty()) {
             synchronized (this) {
-                if (cachedTopLists == null || cachedTopLists.isEmpty()) {
+                snapshot = cachedTopLists.get();
+                if (snapshot == null || snapshot.isEmpty()) {
                     loadTopLists();
                 }
             }
@@ -149,34 +152,34 @@ public class TopListService implements QuestionService {
     }
 
     private ResponseDTO<TopListCategory> findTopListById(int id) {
-        return cachedTopLists.stream()
+        return cachedTopLists.get().stream()
                 .filter(q -> q.getId() == id)
                 .findFirst()
                 .orElse(null);
     }
 
     private List<ResponseDTO<TopListCategory>> findTopListsByRange(int startId, int limit) {
-        return cachedTopLists.stream()
+        return cachedTopLists.get().stream()
                 .skip(startId)
                 .limit(limit)
                 .collect(Collectors.toList());
     }
 
     private List<ResponseDTO<TopListCategory>> findTopListsByCategory(TopListCategory category) {
-        return cachedTopLists.stream()
+        return cachedTopLists.get().stream()
                 .filter(d -> d.getCategories() != null && d.getCategories().contains(category))
                 .collect(Collectors.toList());
     }
 
     private List<ResponseDTO<TopListCategory>> findTopListsByCategories(List<TopListCategory> requiredCategories) {
         Set<TopListCategory> requiredCategorySet = new HashSet<>(requiredCategories);
-        return cachedTopLists.stream()
+        return cachedTopLists.get().stream()
                 .filter(d -> d.getCategories() != null && !Collections.disjoint(new HashSet<>(d.getCategories()), requiredCategorySet))
                 .collect(Collectors.toList());
     }
 
     private List<ResponseDTO<TopListCategory>> findTopListsByFilteredCategories(List<TopListCategory> requiredCategories) {
-        return cachedTopLists.stream()
+        return cachedTopLists.get().stream()
                 .filter(d -> d.getCategories() != null && new HashSet<>(d.getCategories()).containsAll(requiredCategories))
                 .collect(Collectors.toList());
     }

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,7 +24,7 @@ public class DebateService implements QuestionService {
     private final DebateRepository debateRepository;
     private final DebateCategoryRepository debateCategoryRepository;
 
-    private volatile List<ResponseDTO<DebateCategory>> cachedDebates;
+    private final AtomicReference<List<ResponseDTO<DebateCategory>>> cachedDebates = new AtomicReference<>();
 
     @Autowired
     public DebateService(DebateRepository debateRepository, DebateCategoryRepository debateCategoryRepository) {
@@ -59,7 +60,7 @@ public class DebateService implements QuestionService {
     @Override
     public List<ResponseDTO<?>> getAll() {
         ensureDebatesLoaded();
-        return findDebatesByRange(0, cachedDebates.size()).stream()
+        return findDebatesByRange(0, cachedDebates.get().size()).stream()
                 .map(p -> (ResponseDTO<?>) p)
                 .collect(Collectors.toList());
     }
@@ -132,18 +133,20 @@ public class DebateService implements QuestionService {
                 .collect(Collectors.groupingBy(categoryEntity -> categoryEntity.getDebate().getId(),
                         Collectors.mapping(categoryEntity -> DebateCategory.valueOf(categoryEntity.getCategory()), Collectors.toList())));
 
-        cachedDebates = debates.stream()
+        cachedDebates.set(debates.stream()
                 .map(q -> {
                     List<DebateCategory> categories = debateCategoriesMap.getOrDefault(q.getId(), Collections.emptyList());
                     return new ResponseDTO<>(q.getText(), q.getId(), categories);
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     private void ensureDebatesLoaded() {
-        if (cachedDebates == null || cachedDebates.isEmpty()) {
+        List<ResponseDTO<DebateCategory>> snapshot = cachedDebates.get();
+        if (snapshot == null || snapshot.isEmpty()) {
             synchronized (this) {
-                if (cachedDebates == null || cachedDebates.isEmpty()) {
+                snapshot = cachedDebates.get();
+                if (snapshot == null || snapshot.isEmpty()) {
                     loadDebates();
                 }
             }
@@ -151,34 +154,34 @@ public class DebateService implements QuestionService {
     }
 
     private ResponseDTO<DebateCategory> findDebateById(int id) {
-        return cachedDebates.stream()
+        return cachedDebates.get().stream()
                 .filter(q -> q.getId() == id)
                 .findFirst()
                 .orElse(null);
     }
 
     private List<ResponseDTO<DebateCategory>> findDebatesByRange(int startId, int limit) {
-        return cachedDebates.stream()
+        return cachedDebates.get().stream()
                 .skip(startId)
                 .limit(limit)
                 .collect(Collectors.toList());
     }
 
     private List<ResponseDTO<DebateCategory>> findDebatesByCategory(DebateCategory category) {
-        return cachedDebates.stream()
+        return cachedDebates.get().stream()
                 .filter(d -> d.getCategories() != null && d.getCategories().contains(category))
                 .collect(Collectors.toList());
     }
 
     private List<ResponseDTO<DebateCategory>> findDebatesByCategories(List<DebateCategory> requiredCategories) {
         Set<DebateCategory> requiredCategorySet = new HashSet<>(requiredCategories);
-        return cachedDebates.stream()
+        return cachedDebates.get().stream()
                 .filter(d -> d.getCategories() != null && !Collections.disjoint(new HashSet<>(d.getCategories()), requiredCategorySet))
                 .collect(Collectors.toList());
     }
 
     private List<ResponseDTO<DebateCategory>> findDebatesByFilteredCategories(List<DebateCategory> requiredCategories) {
-        return cachedDebates.stream()
+        return cachedDebates.get().stream()
                 .filter(d -> d.getCategories() != null && new HashSet<>(d.getCategories()).containsAll(requiredCategories))
                 .collect(Collectors.toList());
     }

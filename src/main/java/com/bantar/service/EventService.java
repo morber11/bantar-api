@@ -16,6 +16,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Clock;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +28,7 @@ public class EventService {
     private final EventQuestionRepository eventQuestionRepository;
     private final Clock clock;
 
-    private volatile Map<Long, List<String>> cachedQuestionsByEvent;
+    private final AtomicReference<Map<Long, List<String>>> cachedQuestionsByEvent = new AtomicReference<>();
 
     @Autowired
     public EventService(EventRepository eventRepository, EventQuestionRepository eventQuestionRepository, Clock clock) {
@@ -56,15 +57,14 @@ public class EventService {
         DayOfWeek dow = date.getDayOfWeek();
 
         List<EventEntity> extra = allEvents.stream()
-            .filter(e -> e.getType() != null)
-            .filter(e -> switch (e.getType()) {
-                case SpecificDates -> e.getDates() != null && e.getDates().contains(date);
-                case Weekly -> e.getDaysOfWeek() != null && e.getDaysOfWeek().stream()
-                        .anyMatch(d -> d.equalsIgnoreCase(dow.name()));
-                default -> false;
-            })
-            .toList();
-
+                .filter(e -> e.getType() != null)
+                .filter(e -> switch (e.getType()) {
+                    case SpecificDates -> e.getDates() != null && e.getDates().contains(date);
+                    case Weekly -> e.getDaysOfWeek() != null && e.getDaysOfWeek().stream()
+                            .anyMatch(d -> d.equalsIgnoreCase(dow.name()));
+                    default -> false;
+                })
+                .toList();
 
         // combine and deduplicate by id
         List<EventEntity> combined = new ArrayList<>(rangeEvents.stream()
@@ -73,12 +73,13 @@ public class EventService {
 
         for (EventEntity e : extra) {
             boolean exists = combined.stream().anyMatch(x -> x.getId() == e.getId());
-            if (!exists) combined.add(e);
+            if (!exists)
+                combined.add(e);
         }
 
         return combined.stream()
                 .map(ev -> {
-                    List<String> qs = cachedQuestionsByEvent.getOrDefault(ev.getId(), Collections.emptyList());
+                    List<String> qs = cachedQuestionsByEvent.get().getOrDefault(ev.getId(), Collections.emptyList());
                     List<EventQuestionDTO> qdto = qs.stream()
                             .map((s) -> new EventQuestionDTO(0, s))
                             .collect(Collectors.toList());
@@ -87,15 +88,18 @@ public class EventService {
                     if (!qdto.isEmpty()) {
                         List<EventQuestionEntity> ents = eventQuestionRepository.findByEventIdIn(List.of(ev.getId()));
                         if (!ents.isEmpty()) {
-                            Map<String, Long> textToId = ents.stream().collect(Collectors.toMap(EventQuestionEntity::getText, EventQuestionEntity::getId, (a, b) -> a));
+                            Map<String, Long> textToId = ents.stream().collect(Collectors
+                                    .toMap(EventQuestionEntity::getText, EventQuestionEntity::getId, (a, b) -> a));
                             for (EventQuestionDTO dq : qdto) {
                                 Long id = textToId.get(dq.getText());
-                                if (id != null) dq.setId(id);
+                                if (id != null)
+                                    dq.setId(id);
                             }
                         }
                     }
 
-                    return new EventDTO(ev.getId(), ev.getName(), ev.getFriendlyName(), ev.getStyle(), ev.getFromDate(), ev.getUntilDate(), qdto);
+                    return new EventDTO(ev.getId(), ev.getName(), ev.getFriendlyName(), ev.getStyle(), ev.getFromDate(),
+                            ev.getUntilDate(), qdto);
                 })
                 .collect(Collectors.toList());
     }
@@ -107,20 +111,20 @@ public class EventService {
     private synchronized void loadQuestions() {
         List<EventQuestionEntity> questions = eventQuestionRepository.findAll();
         Map<Long, List<String>> map = new HashMap<>();
-
         for (EventQuestionEntity q : questions) {
-            if (q == null || q.getEvent() == null) continue;
+            if (q == null || q.getEvent() == null)
+                continue;
             long eventId = q.getEvent().getId();
             map.computeIfAbsent(eventId, k -> new ArrayList<>()).add(q.getText());
         }
-
-        cachedQuestionsByEvent = map;
+        cachedQuestionsByEvent.set(map);
     }
 
     private void ensureQuestionsLoaded() {
-        if (cachedQuestionsByEvent == null) {
+        if (cachedQuestionsByEvent.get() == null) {
             synchronized (this) {
-                if (cachedQuestionsByEvent == null) loadQuestions();
+                if (cachedQuestionsByEvent.get() == null)
+                    loadQuestions();
             }
         }
     }
