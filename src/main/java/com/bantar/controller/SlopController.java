@@ -29,7 +29,7 @@ public class SlopController {
     }
 
     @GetMapping("/getRandom")
-    public ResponseEntity<ResponseDTO<IcebreakerCategory>> getRandomQuestion(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ResponseDTO<IcebreakerCategory>> getRandomQuestion(HttpServletRequest request) {
         ResponseDTO<IcebreakerCategory> dto = slopService.getRandomQuestion();
         ResponseEntity<ResponseDTO<IcebreakerCategory>> resp;
 
@@ -40,13 +40,13 @@ public class SlopController {
         }
 
         logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
+            request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
 
         return resp;
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<ResponseDTO<IcebreakerCategory>>> getAllQuestions(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<List<ResponseDTO<IcebreakerCategory>>> getAllQuestions(HttpServletRequest request) {
         List<ResponseDTO<IcebreakerCategory>> results = slopService.getAllQuestions();
         ResponseEntity<List<ResponseDTO<IcebreakerCategory>>> resp;
 
@@ -57,7 +57,7 @@ public class SlopController {
         }
 
         logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
+            request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
 
         return resp;
     }
