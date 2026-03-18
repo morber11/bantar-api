@@ -35,7 +35,8 @@ public class DebateService implements QuestionService {
         try {
             loadDebates();
         } catch (Exception e) {
-            logger.error("An error occurred during the initial debate load", e);
+            logger.error("Failed to initialize DebateService", e);
+            throw new IllegalStateException("DebateService initialization failed", e);
         }
     }
 

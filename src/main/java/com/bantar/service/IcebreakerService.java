@@ -35,7 +35,8 @@ public class IcebreakerService implements QuestionService {
         try {
             loadQuestions();
         } catch (Exception e) {
-            logger.error("An error occurred during the initial question load", e);
+            logger.error("Failed to initialize IcebreakerService", e);
+            throw new IllegalStateException("IcebreakerService initialization failed", e);
         }
     }
 

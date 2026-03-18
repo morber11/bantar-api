@@ -45,6 +45,7 @@ public class SlopService {
     private final Executor slopSeedExecutor;
     private final boolean slopSeedEnabled;
     private final long slopSeedBatchDelayMillis;
+    private final ObjectMapper objectMapper;
 
     private static final int INITIAL_QUESTION_COUNT = 30;
     private static final int TARGET_QUESTION_COUNT = 100;
@@ -56,12 +57,14 @@ public class SlopService {
             AiQuestionRepository aiQuestionRepository,
             @Qualifier("slopSeedExecutor") Executor slopSeedExecutor,
             @Value("${slop.seed.enabled:true}") boolean slopSeedEnabled,
-            @Value("${slop.seed.batchDelayMillis:5000}") long slopSeedBatchDelayMillis) {
+            @Value("${slop.seed.batchDelayMillis:5000}") long slopSeedBatchDelayMillis,
+            ObjectMapper objectMapper) {
         this.aiProvider = aiProvider;
         this.aiQuestionRepository = aiQuestionRepository;
         this.slopSeedExecutor = slopSeedExecutor;
         this.slopSeedEnabled = slopSeedEnabled;
         this.slopSeedBatchDelayMillis = slopSeedBatchDelayMillis;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -72,7 +75,7 @@ public class SlopService {
      * Needed for tests
      */
     public SlopService(SlopProvider aiProvider, AiQuestionRepository aiQuestionRepository) {
-        this(aiProvider, aiQuestionRepository, Runnable::run, false, 5000L);
+        this(aiProvider, aiQuestionRepository, Runnable::run, false, 5000L, new ObjectMapper());
     }
 
     @SuppressWarnings("unused")
@@ -106,7 +109,8 @@ public class SlopService {
                         aiQuestionRepository.count());
             }
         } catch (Exception e) {
-            logger.error("An error occurred during the initial question generation", e);
+            logger.error("Failed to initialize SlopService", e);
+            throw new IllegalStateException("SlopService initialization failed", e);
         }
     }
 
@@ -144,10 +148,8 @@ public class SlopService {
 
     private void parseAndStoreQuestions(String jsonResponse) throws JsonProcessingException {
         String cleaned = cleanJsonResponse(jsonResponse);
-        ObjectMapper mapper = new ObjectMapper();
-
-        List<Icebreaker> icebreakers = mapper.readValue(cleaned,
-                mapper.getTypeFactory().constructCollectionType(List.class, Icebreaker.class));
+        List<Icebreaker> icebreakers = objectMapper.readValue(cleaned,
+            objectMapper.getTypeFactory().constructCollectionType(List.class, Icebreaker.class));
 
         int added = 0;
         for (Icebreaker q : icebreakers) {

@@ -43,7 +43,8 @@ public class EventService {
         try {
             loadQuestions();
         } catch (Exception e) {
-            logger.error("An error occurred during the initial question cache load", e);
+            logger.error("Failed to initialize EventService", e);
+            throw new IllegalStateException("EventService initialization failed", e);
         }
     }
 

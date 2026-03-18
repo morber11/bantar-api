@@ -35,7 +35,8 @@ public class TopListService implements QuestionService {
         try {
             loadTopLists();
         } catch (Exception e) {
-            logger.error("An error occurred during the initial toplist load", e);
+            logger.error("Failed to initialize TopListService", e);
+            throw new IllegalStateException("TopListService initialization failed", e);
         }
     }
 
