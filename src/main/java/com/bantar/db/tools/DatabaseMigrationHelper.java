@@ -83,6 +83,8 @@ public class DatabaseMigrationHelper {
                 logger.info("Inserted data into table: {}", tableName);
             }
         }
+       
+        setIdentitySequence(connection, tableName, "ID");
     }
 
     public static void batchInsertIntoTable(Connection connection, String tableName, String columns,
@@ -101,6 +103,8 @@ public class DatabaseMigrationHelper {
             }
             pstmt.executeBatch();
             logger.info("Batch inserted {} rows into table: {}", rows.length, tableName);
+         
+            setIdentitySequence(connection, tableName, "ID");
         }
     }
 
@@ -120,16 +124,18 @@ public class DatabaseMigrationHelper {
                 if (rs.next()) {
                     long id = rs.getLong(1);
                     logger.info("Inserted data into table: {} (generated id={})", tableName, id);
+
+                    setIdentitySequence(connection, tableName, "ID");
                     return id;
                 }
             }
         }
 
-        logger.info("Inserted data into table: {} (no generated key)", tableName);
-        return -1;
+        // no generated key returned - treat as an error so callers don't accidentally use -1 as a FK
+        throw new SQLException("Insert into " + tableName + " returned no generated key");
     }
 
-    public static void setIdentitySequence(Connection connection, String tableName, String idColumn) {
+    public static void setIdentitySequence(Connection connection, String tableName, String idColumn) throws Exception {
         try (Statement s = connection.createStatement();
                 ResultSet rs = s.executeQuery("SELECT MAX(" + idColumn + ") FROM " + tableName)) {
             if (rs.next()) {
@@ -139,7 +145,8 @@ public class DatabaseMigrationHelper {
                 logger.info("Set identity for {}.{} to start at {}", tableName, idColumn, restart);
             }
         } catch (Exception e) {
-            logger.debug("Could not set identity sequence for {}.{}: {}", tableName, idColumn, e.getMessage());
+            logger.warn("Could not set identity sequence for {}.{}: {}", tableName, idColumn, e.getMessage(), e);
+            throw e;
         }
     }
 }
