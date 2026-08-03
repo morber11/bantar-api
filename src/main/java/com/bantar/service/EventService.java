@@ -8,6 +8,7 @@ import com.bantar.repository.EventQuestionRepository;
 import com.bantar.entity.EventQuestionEntity;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
+import org.springframework.context.annotation.DependsOn;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
+@DependsOn("baselineDataSeeder")
 public class EventService {
 
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
