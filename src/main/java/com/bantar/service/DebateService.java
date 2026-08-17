@@ -6,6 +6,7 @@ import com.bantar.dto.ResponseDTO;
 import com.bantar.repository.DebateRepository;
 import com.bantar.service.interfaces.QuestionService;
 import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.DependsOn;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
+@DependsOn("baselineDataSeeder")
 public class DebateService implements QuestionService {
 
     private static final Logger logger = LogManager.getLogger(DebateService.class);
