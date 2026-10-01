@@ -13,8 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -35,6 +38,7 @@ public class SlopServiceTest {
     void setUp() {
         closeable = MockitoAnnotations.openMocks(this);
         slopService = new SlopService(mockSlopProvider, mockAiQuestionRepository);
+        when(mockAiQuestionRepository.findByHash(Mockito.anyString())).thenReturn(Optional.empty());
     }
 
     @AfterEach
@@ -42,15 +46,26 @@ public class SlopServiceTest {
         closeable.close();
     }
 
+    private void stubSavedQuestions() {
+        AtomicLong nextId = new AtomicLong(1);
+        when(mockAiQuestionRepository.save(Mockito.any(AiQuestionEntity.class))).thenAnswer(invocation -> {
+            AiQuestionEntity entity = invocation.getArgument(0);
+            entity.setId(nextId.getAndIncrement());
+            return entity;
+        });
+    }
+
     @Test
     void testGenerateQuestions() throws Exception {
         String mockResponse = "[{\"text\": \"Question 1\"}]";
         when(mockSlopProvider.generate(Mockito.anyString())).thenReturn(mockResponse);
+        stubSavedQuestions();
         slopService.generateQuestions(5);
 
     ResponseDTO<IcebreakerCategory> result = slopService.getRandomQuestion();
         assertNotNull(result);
         assertEquals("Question 1", result.getText());
+        assertEquals(1L, result.getId());
 
         Mockito.verify(mockAiQuestionRepository, Mockito.atLeastOnce()).save(Mockito.argThat(entity ->
                 entity != null && entity.getText().equals("Question 1") && entity.getHash() != null
@@ -70,6 +85,35 @@ public class SlopServiceTest {
 
         assertNotNull(q);
         assertEquals("Persisted Question", q.getText());
+        assertEquals(123L, q.getId());
+    }
+
+    @Test
+    void existingQuestionIsPublishedWithItsStoredId() throws Exception {
+        AiQuestionEntity existing = new AiQuestionEntity("Existing question", "stored-hash");
+        existing.setId(123L);
+        when(mockAiQuestionRepository.findByHash(Mockito.anyString())).thenReturn(Optional.of(existing));
+        when(mockSlopProvider.generate(Mockito.anyString())).thenReturn("[{\"text\":\"Existing question\"}]");
+
+        slopService.generateQuestions(1);
+
+        ResponseDTO<IcebreakerCategory> question = slopService.getRandomQuestion();
+        assertNotNull(question);
+        assertEquals(123L, question.getId());
+        assertEquals("Existing question", question.getText());
+        Mockito.verify(mockAiQuestionRepository, Mockito.never()).save(Mockito.any(AiQuestionEntity.class));
+    }
+
+    @Test
+    void failedSaveDoesNotPublishQuestion() throws Exception {
+        when(mockSlopProvider.generate(Mockito.anyString())).thenReturn("[{\"text\":\"Unsaved question\"}]");
+        when(mockAiQuestionRepository.save(Mockito.any(AiQuestionEntity.class)))
+                .thenThrow(new DataAccessResourceFailureException("database unavailable"));
+
+        slopService.generateQuestions(1);
+
+        assertTrue(slopService.getAllQuestions().isEmpty());
+        assertNull(slopService.getRandomQuestion());
     }
 
     @Test
@@ -108,6 +152,7 @@ public class SlopServiceTest {
     void testGenerateQuestionsMultiple() throws Exception {
         String mockResponse = "[{\"text\": \"Question 1\"}, {\"text\": \"Question 2\"}, {\"text\": \"Question 3\"}]";
         when(mockSlopProvider.generate(Mockito.anyString())).thenReturn(mockResponse);
+        stubSavedQuestions();
         slopService.generateQuestions(3);
 
     ResponseDTO<IcebreakerCategory> result = slopService.getRandomQuestion();
@@ -126,6 +171,7 @@ public class SlopServiceTest {
     void testGetRandomQuestionReturnsFromMap() throws Exception {
         String mockResponse = "[{\"text\": \"Sample Question\"}]";
         when(mockSlopProvider.generate(Mockito.anyString())).thenReturn(mockResponse);
+        stubSavedQuestions();
         slopService.generateQuestions(1);
 
     ResponseDTO<IcebreakerCategory> result = slopService.getRandomQuestion();

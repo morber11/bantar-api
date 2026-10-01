@@ -8,7 +8,5 @@ import java.util.Optional;
 
 @Repository
 public interface AiQuestionRepository extends JpaRepository<AiQuestionEntity, Long> {
-    boolean existsByHash(String hash);
-    @SuppressWarnings("unused")
     Optional<AiQuestionEntity> findByHash(String hash);
 }

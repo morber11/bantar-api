@@ -2,8 +2,6 @@ package com.bantar.service;
 
 import com.bantar.dto.ResponseDTO;
 import com.bantar.entity.AiQuestionEntity;
-import com.bantar.entity.IcebreakerEntity;
-import com.bantar.mapper.IcebreakerMapper;
 import com.bantar.model.Icebreaker;
 import com.bantar.model.IcebreakerCategory;
 import com.bantar.repository.AiQuestionRepository;
@@ -12,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bantar.slop.SlopProvider;
 
 import jakarta.annotation.PostConstruct;
-import jakarta.persistence.PersistenceException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +17,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -84,17 +80,9 @@ public class SlopService {
         logger.info("SlopService initialized using provider {}", aiProvider.getClass().getName());
         try {
             aiQuestionRepository.findAll().forEach(entity -> {
-                ResponseDTO<IcebreakerCategory> dto = IcebreakerMapper
-                        .toGenericModel(new IcebreakerEntity(entity.getId(), entity.getText(), null));
-                Icebreaker q = new Icebreaker(dto.getText(), dto.getId());
+                Icebreaker q = new Icebreaker(entity.getText(), entity.getId());
                 q.setCategories(List.of(IcebreakerCategory.CASUAL));
-                try {
-                    String key = sha256(entity.getText().trim().toLowerCase());
-                    questionMap.putIfAbsent(key, q);
-                } catch (Exception e) {
-                    // fallback to text key if hashing fails
-                    questionMap.putIfAbsent(q.getText(), q);
-                }
+                questionMap.putIfAbsent(entity.getHash(), q);
             });
             logger.info("{} ai questions preloaded from database", questionMap.size());
 
@@ -166,23 +154,23 @@ public class SlopService {
                 key = normalized;
             }
 
-            if (questionMap.putIfAbsent(key, q) == null) {
-                q.setCategories(List.of(IcebreakerCategory.CASUAL));
-                added++;
+            if (questionMap.containsKey(key)) {
+                continue;
+            }
 
-                try {
-                    if (!aiQuestionRepository.existsByHash(key)) {
-                        AiQuestionEntity entity = new AiQuestionEntity(q.getText(), key);
-                        try {
-                            aiQuestionRepository.save(entity);
-                        } catch (DataIntegrityViolationException | PersistenceException dbEx) {
-                            // concurrent insert happened
-                            logger.warn("AI question save race detected for hash {} - ignoring duplicate save.", key);
-                        }
-                    }
-                } catch (Exception ex) {
-                    logger.warn("Failed to persist AI question: {}", q.getText(), ex);
+            try {
+                AiQuestionEntity entity = aiQuestionRepository.findByHash(key).orElse(null);
+                if (entity == null) {
+                    entity = aiQuestionRepository.save(new AiQuestionEntity(q.getText(), key));
                 }
+
+                Icebreaker persistedQuestion = new Icebreaker(entity.getText(), entity.getId());
+                persistedQuestion.setCategories(List.of(IcebreakerCategory.CASUAL));
+                if (questionMap.putIfAbsent(key, persistedQuestion) == null) {
+                    added++;
+                }
+            } catch (Exception ex) {
+                logger.warn("Failed to persist AI question: {}", q.getText(), ex);
             }
         }
         logger.info("{} ai generated questions added", added);
