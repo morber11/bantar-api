@@ -58,11 +58,14 @@ class EventServiceTest {
         q.setId(42L);
         q.setText("a test event question");
         q.setEvent(ev);
+        EventQuestionEntity sameText = new EventQuestionEntity();
+        sameText.setId(43L);
+        sameText.setText(q.getText());
+        sameText.setEvent(ev);
 
         when(eventRepository.getAvailableEvents(date)).thenReturn(List.of(ev));
         when(eventRepository.getAllEvents()).thenReturn(List.of());
-        when(eventQuestionRepository.findAll()).thenReturn(List.of(q));
-        when(eventQuestionRepository.findByEventIdIn(List.of(ev.getId()))).thenReturn(List.of(q));
+        when(eventQuestionRepository.findAll()).thenReturn(List.of(q, sameText));
 
         eventService.refresh();
 
@@ -73,9 +76,35 @@ class EventServiceTest {
         assertNotNull(dto);
         assertEquals("Test Event (Every Day)", dto.getFriendlyName());
         List<EventQuestionDTO> qs = dto.getQuestions();
-        assertNotNull(qs);
-        assertTrue(qs.stream().anyMatch(qd -> qd.getText().contains("test event question")));
-        assertTrue(qs.stream().anyMatch(qd -> qd.getId() == 42L));
+        assertEquals(List.of(42L, 43L), qs.stream().map(EventQuestionDTO::getId).toList());
+        assertEquals(List.of(q.getText(), q.getText()), qs.stream().map(EventQuestionDTO::getText).toList());
+    }
+
+    @Test
+    void refreshReplacesCachedQuestions() {
+        LocalDate date = LocalDate.now(clock);
+        EventEntity ev = new EventEntity();
+        ev.setId(1L);
+
+        EventQuestionEntity original = new EventQuestionEntity(42L, "original");
+        original.setEvent(ev);
+        EventQuestionEntity replacement = new EventQuestionEntity(43L, "replacement");
+        replacement.setEvent(ev);
+
+        when(eventRepository.getAvailableEvents(date)).thenReturn(List.of(ev));
+        when(eventRepository.getAllEvents()).thenReturn(List.of());
+        when(eventQuestionRepository.findAll())
+                .thenReturn(List.of(original))
+                .thenReturn(List.of(replacement));
+
+        eventService.refresh();
+        assertEquals(42L, eventService.getCurrentEvents().get(0).getQuestions().get(0).getId());
+
+        eventService.refresh();
+        List<EventQuestionDTO> refreshed = eventService.getCurrentEvents().get(0).getQuestions();
+        assertEquals(1, refreshed.size());
+        assertEquals(43L, refreshed.get(0).getId());
+        assertEquals("replacement", refreshed.get(0).getText());
     }
 
     @Test

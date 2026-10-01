@@ -30,7 +30,7 @@ public class EventService {
     private final EventQuestionRepository eventQuestionRepository;
     private final Clock clock;
 
-    private final AtomicReference<Map<Long, List<String>>> cachedQuestionsByEvent = new AtomicReference<>();
+    private final AtomicReference<Map<Long, List<EventQuestionDTO>>> cachedQuestionsByEvent = new AtomicReference<>();
 
     @Autowired
     public EventService(EventRepository eventRepository, EventQuestionRepository eventQuestionRepository, Clock clock) {
@@ -54,6 +54,7 @@ public class EventService {
         LocalDate date = LocalDate.now(clock);
 
         ensureQuestionsLoaded();
+        Map<Long, List<EventQuestionDTO>> questionsByEvent = cachedQuestionsByEvent.get();
 
         List<EventEntity> rangeEvents = eventRepository.getAvailableEvents(date);
         List<EventEntity> allEvents = eventRepository.getAllEvents();
@@ -82,24 +83,10 @@ public class EventService {
 
         return combined.stream()
                 .map(ev -> {
-                    List<String> qs = cachedQuestionsByEvent.get().getOrDefault(ev.getId(), Collections.emptyList());
+                    List<EventQuestionDTO> qs = questionsByEvent.getOrDefault(ev.getId(), Collections.emptyList());
                     List<EventQuestionDTO> qdto = qs.stream()
-                            .map((s) -> new EventQuestionDTO(0, s))
+                            .map(q -> new EventQuestionDTO(q.getId(), q.getText()))
                             .collect(Collectors.toList());
-                    // populate ids when possible by matching repository entities
-                    // attempt to fill ids from EventQuestionRepository results
-                    if (!qdto.isEmpty()) {
-                        List<EventQuestionEntity> ents = eventQuestionRepository.findByEventIdIn(List.of(ev.getId()));
-                        if (!ents.isEmpty()) {
-                            Map<String, Long> textToId = ents.stream().collect(Collectors
-                                    .toMap(EventQuestionEntity::getText, EventQuestionEntity::getId, (a, b) -> a));
-                            for (EventQuestionDTO dq : qdto) {
-                                Long id = textToId.get(dq.getText());
-                                if (id != null)
-                                    dq.setId(id);
-                            }
-                        }
-                    }
 
                     return new EventDTO(ev.getId(), ev.getName(), ev.getFriendlyName(), ev.getStyle(), ev.getFromDate(),
                             ev.getUntilDate(), qdto);
@@ -113,12 +100,12 @@ public class EventService {
 
     private synchronized void loadQuestions() {
         List<EventQuestionEntity> questions = eventQuestionRepository.findAll();
-        Map<Long, List<String>> map = new HashMap<>();
+        Map<Long, List<EventQuestionDTO>> map = new HashMap<>();
         for (EventQuestionEntity q : questions) {
             if (q == null || q.getEvent() == null)
                 continue;
             long eventId = q.getEvent().getId();
-            map.computeIfAbsent(eventId, k -> new ArrayList<>()).add(q.getText());
+            map.computeIfAbsent(eventId, k -> new ArrayList<>()).add(new EventQuestionDTO(q.getId(), q.getText()));
         }
         cachedQuestionsByEvent.set(map);
     }
