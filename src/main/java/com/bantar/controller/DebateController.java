@@ -7,10 +7,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -21,8 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/debates")
 public class DebateController {
-
-    private static final Logger logger = LoggerFactory.getLogger(DebateController.class);
 
     private final QuestionService debateService;
 
@@ -37,7 +31,7 @@ public class DebateController {
      * @return 200 with debate when found, 404 when not found
      */
     @GetMapping("/get/{id}")
-    public ResponseEntity<ResponseDTO<?>> getQuestionById(@PathVariable int id, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ResponseDTO<?>> getQuestionById(@PathVariable int id) {
         ResponseDTO<?> result = debateService.getById(id);
         ResponseEntity<ResponseDTO<?>> resp;
 
@@ -46,9 +40,6 @@ public class DebateController {
         } else {
             resp = new ResponseEntity<>(result, HttpStatus.OK);
         }
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
 
         return resp;
     }
@@ -63,7 +54,7 @@ public class DebateController {
     public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByRange(
             @RequestParam(defaultValue = "0") int startId,
             @RequestParam(defaultValue = "100") int limit
-            , HttpServletRequest request, HttpServletResponse response
+            
     ) {
         List<ResponseDTO<?>> result = debateService.getByRange(startId, limit);
         ResponseEntity<List<ResponseDTO<?>>> resp;
@@ -74,9 +65,6 @@ public class DebateController {
             resp = new ResponseEntity<>(result, HttpStatus.OK);
         }
 
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
         return resp;
     }
 
@@ -85,7 +73,7 @@ public class DebateController {
      * @return 200 with list when available, 404 if not
      */
     @GetMapping("/getAll")
-    public ResponseEntity<List<ResponseDTO<?>>> getAllQuestions(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<List<ResponseDTO<?>>> getAllQuestions() {
         List<ResponseDTO<?>> result = debateService.getAll();
         ResponseEntity<List<ResponseDTO<?>>> resp;
 
@@ -94,9 +82,6 @@ public class DebateController {
         } else {
             resp = new ResponseEntity<>(result, HttpStatus.OK);
         }
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
 
         return resp;
     }
@@ -107,7 +92,7 @@ public class DebateController {
      * @return 200 with list when valid, 400 when category is invalid
      */
     @GetMapping("/getByCategory")
-    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategory(@RequestParam String category, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategory(@RequestParam String category) {
         List<ResponseDTO<?>> result = debateService.getByCategory(category);
         ResponseEntity<List<ResponseDTO<?>>> resp;
 
@@ -116,9 +101,6 @@ public class DebateController {
         } else {
             resp = ResponseEntity.ok(result);
         }
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
 
         return resp;
     }
@@ -129,7 +111,7 @@ public class DebateController {
      * @return 200 with list when at least one valid category, 400 when none
      */
     @GetMapping("/getByCategories")
-    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategories(@RequestParam List<String> categories, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByCategories(@RequestParam List<String> categories) {
         List<ResponseDTO<?>> result = debateService.getByCategories(categories);
         ResponseEntity<List<ResponseDTO<?>>> resp;
 
@@ -138,9 +120,6 @@ public class DebateController {
         } else {
             resp = ResponseEntity.ok(result);
         }
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
 
         return resp;
     }
@@ -151,7 +130,7 @@ public class DebateController {
      * @return 200 with list when at least one debate matches all categories, 400 when none
      */
     @GetMapping("/getByFilteredCategories")
-    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByFilteredCategories(@RequestParam List<String> categories, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<List<ResponseDTO<?>>> getQuestionsByFilteredCategories(@RequestParam List<String> categories) {
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(categories);
         ResponseEntity<List<ResponseDTO<?>>> resp;
 
@@ -160,9 +139,6 @@ public class DebateController {
         } else {
             resp = ResponseEntity.ok(result);
         }
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
 
         return resp;
     }
@@ -173,13 +149,8 @@ public class DebateController {
      * @return 200 on success
      */
     @PostMapping("/refresh")
-    public ResponseEntity<Void> refreshQuestions(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<Void> refreshQuestions() {
         debateService.refresh();
-        ResponseEntity<Void> resp = new ResponseEntity<>(HttpStatus.OK);
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
-        return resp;
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

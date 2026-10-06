@@ -4,10 +4,6 @@ import com.bantar.service.SyncServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,8 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/sync")
 public class SyncController {
 
-    private static final Logger logger = LoggerFactory.getLogger(SyncController.class);
-
     private final SyncServiceImpl syncService;
 
     @Autowired
@@ -27,24 +21,14 @@ public class SyncController {
     }
 
     @GetMapping("/getChecksum")
-    public ResponseEntity<Long> getChecksum(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<Long> getChecksum() {
         Long result = syncService.getLatestChecksum();
-        ResponseEntity<Long> resp = ResponseEntity.ok(result);
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
-        return resp;
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/checkIfLatestChecksum")
-    public ResponseEntity<Boolean> checkIfLatestChecksum(@RequestParam() long checksum, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<Boolean> checkIfLatestChecksum(@RequestParam() long checksum) {
         Boolean result = syncService.isLatestChecksum(checksum);
-        ResponseEntity<Boolean> resp = ResponseEntity.ok(result);
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
-        return resp;
+        return ResponseEntity.ok(result);
     }
 }

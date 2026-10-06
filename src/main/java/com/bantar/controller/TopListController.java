@@ -7,10 +7,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -22,8 +18,6 @@ import java.util.List;
 @RequestMapping("/toplists")
 public class TopListController {
 
-    private static final Logger logger = LoggerFactory.getLogger(TopListController.class);
-
     private final QuestionService topListService;
 
     @Autowired
@@ -32,8 +26,7 @@ public class TopListController {
     }
 
     @GetMapping("/get/{id}")
-    public ResponseEntity<ResponseDTO<?>> getById(@PathVariable int id, HttpServletRequest request,
-            HttpServletResponse response) {
+    public ResponseEntity<ResponseDTO<?>> getById(@PathVariable int id) {
         ResponseDTO<?> result = topListService.getById(id);
         ResponseEntity<ResponseDTO<?>> resp;
         if (result == null) {
@@ -42,38 +35,23 @@ public class TopListController {
             resp = ResponseEntity.ok(result);
         }
 
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
         return resp;
     }
 
     @GetMapping("/getByRange")
     public ResponseEntity<List<ResponseDTO<?>>> getByRange(@RequestParam(defaultValue = "0") int startId,
-            @RequestParam(defaultValue = "100") int limit,
-            HttpServletRequest request, HttpServletResponse response) {
+            @RequestParam(defaultValue = "100") int limit) {
         List<ResponseDTO<?>> result = topListService.getByRange(startId, limit);
-        ResponseEntity<List<ResponseDTO<?>>> resp = ResponseEntity.ok(result);
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
-        return resp;
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<List<ResponseDTO<?>>> getAll(HttpServletRequest request, HttpServletResponse response) {
-        ResponseEntity<List<ResponseDTO<?>>> resp = ResponseEntity.ok(topListService.getAll());
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
-        return resp;
+    public ResponseEntity<List<ResponseDTO<?>>> getAll() {
+        return ResponseEntity.ok(topListService.getAll());
     }
 
     @GetMapping("/getByCategory")
-    public ResponseEntity<List<ResponseDTO<?>>> getByCategory(@RequestParam String category, HttpServletRequest request,
-            HttpServletResponse response) {
+    public ResponseEntity<List<ResponseDTO<?>>> getByCategory(@RequestParam String category) {
         List<ResponseDTO<?>> result = topListService.getByCategory(category);
         ResponseEntity<List<ResponseDTO<?>>> resp;
         if (result == null || result.isEmpty()) {
@@ -82,15 +60,11 @@ public class TopListController {
             resp = ResponseEntity.ok(result);
         }
 
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
         return resp;
     }
 
     @GetMapping("/getByCategories")
-    public ResponseEntity<List<ResponseDTO<?>>> getByCategories(@RequestParam List<String> categories,
-            HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<List<ResponseDTO<?>>> getByCategories(@RequestParam List<String> categories) {
         List<ResponseDTO<?>> result = topListService.getByCategories(categories);
         ResponseEntity<List<ResponseDTO<?>>> resp;
         if (result == null || result.isEmpty()) {
@@ -99,15 +73,11 @@ public class TopListController {
             resp = ResponseEntity.ok(result);
         }
 
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
         return resp;
     }
 
     @GetMapping("/getByFilteredCategories")
-    public ResponseEntity<List<ResponseDTO<?>>> getByFilteredCategories(@RequestParam List<String> categories,
-            HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<List<ResponseDTO<?>>> getByFilteredCategories(@RequestParam List<String> categories) {
         List<ResponseDTO<?>> result = topListService.getByFilteredCategories(categories);
         ResponseEntity<List<ResponseDTO<?>>> resp;
         if (result == null || result.isEmpty()) {
@@ -116,20 +86,12 @@ public class TopListController {
             resp = ResponseEntity.ok(result);
         }
 
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
         return resp;
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<Void> refresh(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<Void> refresh() {
         topListService.refresh();
-        ResponseEntity<Void> resp = new ResponseEntity<>(HttpStatus.OK);
-
-        logger.info("Request URL: {} Method: {} Status: {}",
-                request.getRequestURL().toString(), request.getMethod(), resp.getStatusCode().value());
-
-        return resp;
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
