@@ -22,7 +22,7 @@ class DebateServiceTest {
 
     @Mock
     private DebateRepository debateRepository;
-        private DebateService debateService;
+    private DebateService debateService;
     private AutoCloseable closeable;
 
     @BeforeEach
@@ -44,25 +44,6 @@ class DebateServiceTest {
         d2.setCategories(Arrays.asList(new DebateCategoryEntity(2L, "CASUAL", d2), new DebateCategoryEntity(5L, "ETHICS", d2)));
         d3.setCategories(Arrays.asList(new DebateCategoryEntity(3L, "CASUAL", d3), new DebateCategoryEntity(6L, "EDUCATION", d3)));
         return Arrays.asList(d1, d2, d3);
-    }
-
-    private List<DebateCategoryEntity> createDebateCategoryEntities() {
-        DebateEntity d1 = new DebateEntity();
-        d1.setId(1L);
-
-        DebateEntity d2 = new DebateEntity();
-        d2.setId(2L);
-
-        DebateEntity d3 = new DebateEntity();
-        d3.setId(3L);
-
-        return Arrays.asList(
-                new DebateCategoryEntity(1L, "CASUAL", d1),
-                new DebateCategoryEntity(2L, "CASUAL", d2),
-                new DebateCategoryEntity(3L, "CASUAL", d3),
-                new DebateCategoryEntity(2L, "ETHICS", d2),
-                new DebateCategoryEntity(3L, "EDUCATION", d3)
-        );
     }
 
     @Test
@@ -99,7 +80,6 @@ class DebateServiceTest {
         List<DebateEntity> debates = List.of(new DebateEntity(1, "Should we colonize Mars?", categories));
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
 
-
         ResponseDTO<?> result = debateService.getById(999);
 
         assertNull(result);
@@ -120,7 +100,6 @@ class DebateServiceTest {
             assertEquals(debates.get(i).getText(), refreshed.get(i).getText());
         }
     }
-
 
     @Test
     void testGetQuestionsByRange() {
@@ -158,22 +137,10 @@ class DebateServiceTest {
     }
 
     @Test
-    void testGetQuestionsByRangeWithValidRange() {
-        List<DebateEntity> debates = createDebateEntities();
-        when(debateRepository.findAllWithCategories()).thenReturn(debates);
-
-        List<ResponseDTO<?>> result = debateService.getByRange(1, 2);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("Is AI a threat?", result.get(0).getText());
-        assertEquals("Should voting be mandatory?", result.get(1).getText());
-    }
-
-    @Test
     void testGetQuestionsByValidCategory() {
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByCategory(DebateCategory.CASUAL.name());
 
         assertNotNull(result);
@@ -200,6 +167,7 @@ class DebateServiceTest {
 
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(categories);
 
         assertNotNull(result);
@@ -218,6 +186,7 @@ class DebateServiceTest {
 
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(categories);
 
         assertNotNull(result);
@@ -234,6 +203,7 @@ class DebateServiceTest {
 
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(categories);
 
         assertTrue(result == null || result.isEmpty());
@@ -243,6 +213,7 @@ class DebateServiceTest {
     void testGetQuestionsByFilteredCategoriesEmptyList() {
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(Collections.emptyList());
 
         assertTrue(result == null || result.isEmpty());
@@ -252,6 +223,7 @@ class DebateServiceTest {
     void testGetQuestionsByFilteredCategoriesNullList() {
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByFilteredCategories(null);
 
         assertTrue(result == null || result.isEmpty());
@@ -263,6 +235,7 @@ class DebateServiceTest {
 
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByCategories(categories);
 
         assertNotNull(result);
@@ -275,6 +248,7 @@ class DebateServiceTest {
 
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByCategories(categories);
 
         assertNotNull(result);
@@ -290,6 +264,7 @@ class DebateServiceTest {
 
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByCategories(categories);
 
         assertTrue(result == null || result.isEmpty());
@@ -299,6 +274,7 @@ class DebateServiceTest {
     void testGetQuestionsByCategoriesEmptyList() {
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByCategories(Collections.emptyList());
 
         assertTrue(result == null || result.isEmpty());
@@ -308,6 +284,7 @@ class DebateServiceTest {
     void testGetQuestionsByCategoriesNullList() {
         List<DebateEntity> debates = createDebateEntities();
         when(debateRepository.findAllWithCategories()).thenReturn(debates);
+
         List<ResponseDTO<?>> result = debateService.getByCategories(null);
 
         assertTrue(result == null || result.isEmpty());

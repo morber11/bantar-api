@@ -23,7 +23,7 @@ class TopListServiceTest {
 
     @Mock
     private TopListRepository topListRepository;
-        private QuestionService topListService;
+    private QuestionService topListService;
     private AutoCloseable closeable;
 
     @BeforeEach
@@ -45,23 +45,6 @@ class TopListServiceTest {
         t2.setCategories(List.of(new TopListCategoryEntity(2L, "CASUAL", t2)));
         t3.setCategories(List.of(new TopListCategoryEntity(3L, "TRAVEL", t3)));
         return Arrays.asList(t1, t2, t3);
-    }
-
-    private List<TopListCategoryEntity> createTopListCategoryEntities() {
-        TopListEntity t1 = new TopListEntity();
-        t1.setId(1L);
-
-        TopListEntity t2 = new TopListEntity();
-        t2.setId(2L);
-
-        TopListEntity t3 = new TopListEntity();
-        t3.setId(3L);
-
-        return Arrays.asList(
-                new TopListCategoryEntity(1L, "TELEVISION_MOVIES", t1),
-                new TopListCategoryEntity(2L, "CASUAL", t2),
-                new TopListCategoryEntity(3L, "TRAVEL", t3)
-        );
     }
 
     @Test
@@ -132,6 +115,7 @@ class TopListServiceTest {
     void testGetByValidCategory() {
         List<TopListEntity> items = createTopListEntities();
         when(topListRepository.findAllWithCategories()).thenReturn(items);
+
         List<ResponseDTO<?>> result = topListService.getByCategory("CASUAL");
 
         assertNotNull(result);
@@ -157,6 +141,7 @@ class TopListServiceTest {
 
         List<TopListEntity> items = createTopListEntities();
         when(topListRepository.findAllWithCategories()).thenReturn(items);
+
         List<ResponseDTO<?>> result = topListService.getByCategories(categoriesFilter);
 
         assertNotNull(result);
@@ -169,6 +154,7 @@ class TopListServiceTest {
 
         List<TopListEntity> items = createTopListEntities();
         when(topListRepository.findAllWithCategories()).thenReturn(items);
+
         List<ResponseDTO<?>> result = topListService.getByFilteredCategories(categoriesFilter);
 
         assertNotNull(result);

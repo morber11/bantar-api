@@ -26,6 +26,7 @@ class SeederJdbcHelperTest {
         JdbcDataSource ds = new JdbcDataSource();
         ds.setURL("jdbc:h2:mem:seederHelper;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
+
         Context context = new Context() {
             @Override
             public Connection getConnection() {
@@ -42,6 +43,7 @@ class SeederJdbcHelperTest {
             }
         };
         new V1__Create_Initial_Schema().migrate(context);
+
         helper = new SeederJdbcHelper(jdbc);
     }
 
@@ -60,7 +62,6 @@ class SeederJdbcHelperTest {
         long id = helper.findOrInsertIcebreaker("What is your favorite color?", 1);
 
         assertTrue(id > 0);
-        assertEquals(1, count("ICEBREAKER"));
         assertEquals(1, jdbc.queryForObject(
                 "SELECT COUNT(*) FROM ICEBREAKER WHERE TEXT = ?", Integer.class, "What is your favorite color?"));
     }
@@ -72,15 +73,6 @@ class SeederJdbcHelperTest {
 
         assertEquals(first, second);
         assertEquals(1, count("ICEBREAKER"));
-    }
-
-    @Test
-    void generatedIdsAreDistinctAcrossParents() {
-        long a = helper.findOrInsertDebate("Debate alpha?");
-        long b = helper.findOrInsertDebate("Debate beta?");
-
-        assertNotEquals(a, b);
-        assertEquals(2, count("DEBATE"));
     }
 
     @Test

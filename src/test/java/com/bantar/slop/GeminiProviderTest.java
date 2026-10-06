@@ -44,13 +44,16 @@ public class GeminiProviderTest {
         when(mockModels.generateContent(GEMINI_MODEL, prompt, null)).thenReturn(mockResponse);
 
         String actual = provider.generate(prompt);
+
         assertEquals(responseText, actual);
     }
 
     @Test
     void generateThrowsWhenResponseNull() {
         when(mockModels.generateContent(GEMINI_MODEL, "x", null)).thenReturn(null);
+
         Exception ex = assertThrows(Exception.class, () -> provider.generate("x"));
+
         assertTrue(ex.getMessage().contains("Empty response"));
     }
 
@@ -79,6 +82,7 @@ public class GeminiProviderTest {
                 .thenReturn(mockResponse);
 
         String actual = provider.generate(prompt);
+
         assertEquals(responseText, actual);
         // verify that the method was invoked three times (2 failures + success)
         Mockito.verify(mockModels, Mockito.times(3)).generateContent(GEMINI_MODEL, prompt, null);
@@ -90,7 +94,9 @@ public class GeminiProviderTest {
         when(mockModels.generateContent(GEMINI_MODEL, prompt, null))
                 .thenThrow(new RuntimeException("permanent failure"));
 
+
         Exception ex = assertThrows(Exception.class, () -> provider.generate(prompt));
+
         // we expect at least the message from the thrown exception
         assertTrue(ex.getMessage().contains("permanent failure"));
         Mockito.verify(mockModels, Mockito.times(provider.maxRetries))

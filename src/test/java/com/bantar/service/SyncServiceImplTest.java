@@ -45,7 +45,9 @@ class SyncServiceImplTest {
         // calculated from the createMockJsonNode
         long expectedChecksum = 3910021588L;
         when(jsonReaderService.readJsonResource(anyString())).thenReturn(jsonNode);
+
         long result = syncService.getLatestChecksum();
+
         assertEquals(expectedChecksum, result);
     }
 
@@ -55,7 +57,9 @@ class SyncServiceImplTest {
         // calculated from the createMockJsonNode
         long checksum = 3910021588L;
         when(jsonReaderService.readJsonResource(anyString())).thenReturn(jsonNode);
+
         syncService.getLatestChecksum();
+
         assertTrue(syncService.isLatestChecksum(checksum));
         assertFalse(syncService.isLatestChecksum(checksum + 1));
     }
@@ -63,7 +67,9 @@ class SyncServiceImplTest {
     @Test
     void testGetLatestChecksumInvalidJsonData() {
         when(jsonReaderService.readJsonResource(anyString())).thenReturn(null);
+
         long result = syncService.getLatestChecksum();
+
         assertEquals(-1L, result);
     }
 }
