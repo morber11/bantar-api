@@ -11,31 +11,40 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RateLimitingFilter extends OncePerRequestFilter {
 
+    private static final int CAPACITY = 50;
+    private static final Duration REFILL_PERIOD = Duration.ofMinutes(1);
+
     private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final AtomicLong lastIdleBucketRemovalNanos = new AtomicLong(System.nanoTime());
 
     private Bucket createBucket() {
         return Bucket.builder()
-                .addLimit(limit -> limit.capacity(50).refillIntervally(50, Duration.ofMinutes(1)))
+                .addLimit(limit -> limit.capacity(CAPACITY).refillIntervally(CAPACITY, REFILL_PERIOD))
                 .build();
     }
 
-    private String resolveClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
+    // a full bucket behaves exactly like a new one, so dropping it loses nothing
+    private void removeIdleBuckets() {
+        long now = System.nanoTime();
+        long lastRemoval = lastIdleBucketRemovalNanos.get();
 
-        return request.getRemoteAddr();
+        if (now - lastRemoval >= REFILL_PERIOD.toNanos()
+            && lastIdleBucketRemovalNanos.compareAndSet(lastRemoval, now)) {
+            buckets.values().removeIf(bucket -> bucket.getAvailableTokens() == CAPACITY);
+        }
     }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String clientIp = resolveClientIp(request);
+        removeIdleBuckets();
+
+        String clientIp = request.getRemoteAddr();
         Bucket bucket = buckets.computeIfAbsent(clientIp, k -> createBucket());
 
         // note: retryAfter is hardcoded to 60 seconds in this - not dynamic
