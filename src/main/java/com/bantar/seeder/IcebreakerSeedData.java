@@ -543,7 +543,6 @@ final class IcebreakerSeedData {
             new Item(1, "What's the most awkward thing that happens to you on a regular basis?", List.of(IcebreakerCategory.CASUAL, IcebreakerCategory.FUN_HUMOUR)),
             new Item(1, "Have you ever made a huge drunken mistake?", List.of(IcebreakerCategory.FUN_HUMOUR, IcebreakerCategory.NSFW)),
             new Item(1, "What two films would you like to combine into one?", List.of(IcebreakerCategory.FUN_HUMOUR, IcebreakerCategory.TELEVISION_MOVIES)),
-            new Item(1, "Bermuda Warwick Long Bay Beach", List.of(IcebreakerCategory.TRAVEL)),
             new Item(1, "What small change greatly improves a person's appearance?", List.of(IcebreakerCategory.FASHION, IcebreakerCategory.LIFESTYLE)),
             new Item(1, "Where is the most uncomfortable place you have ever slept?", List.of(IcebreakerCategory.FUN_HUMOUR, IcebreakerCategory.TRAVEL)),
             new Item(1, "How do you deal with work stress?", List.of(IcebreakerCategory.BUSINESS, IcebreakerCategory.LIFESTYLE)),
