@@ -59,7 +59,7 @@ public class EventSeeder implements Seeder {
                             "What's the craic?"
                     )),
             new EventSeed("HALLOWEEN", "Halloween", 0,
-                    LocalDate.of(2026, 10, 24), LocalDate.of(2026, 10, 31),
+                    LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31),
                     "{ \"style\": { \"light\": \"background-color: #ea580c;\", \"dark\": \"background-color: #431407;\" }}",
                     List.of(
                             "What is the best/worst Halloween costume you've ever seen or worn?",
